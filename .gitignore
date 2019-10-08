@@ -1,0 +1,9 @@
+/lab1
+**/.vs
+**/.idea
+**/bin
+**/Properties
+**/obj
+**/*.csproj
+**/*.sln
+**/*.config
