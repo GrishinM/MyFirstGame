@@ -12,6 +12,8 @@
         [ModsAttr("Бессилие (не может атаковать)", false)] Disarmed,
         [ModsAttr("Заглушение (не может использовать способности)", false)] Silenced,
         [ModsAttr("Положительные моды отключены", false)] Breaked,
-        [ModsAttr("Бессмертие (здоровье не опускается ниже 1)", true)] Immortal
+        [ModsAttr("Бессмертие (здоровье не опускается ниже 1)", true)] Immortal,
+        [ModsAttr("Защита увеличена на 5", true)] Defence,
+        [ModsAttr("Инициатива увеличена на 30%", true)] Hasted
     }
 }

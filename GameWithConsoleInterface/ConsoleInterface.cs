@@ -1,19 +1,44 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using MyGameEngine;
 
 namespace GameWithConsoleInterface
 {
-    internal class ConsoleInterface : Interface
+    internal class ConsoleInterface
     {
-        public override void Start()
+        private static readonly SortedDictionary<string, Army> armys = new SortedDictionary<string, Army>();
+        private static readonly SortedDictionary<string, BattleUnitsStack> stacks = new SortedDictionary<string, BattleUnitsStack>();
+
+        private static readonly Unit[] units =
+        {
+            new Abaddon(), new Axe(), new Dark_Seer(), new Doom(), new Drow_Ranger(), new Huskar(), new Juggernaut(), new Keeper_of_the_Light(), new Lich(),
+            new Line_meleee_creep(),
+            new Omniknight(), new Sniper(), new Sven(), new Tower()
+        };
+
+        private BattleUnitsStack playerStack;
+        private int round;
+//        private int delta;
+        private int players;
+        private bool GAME;
+        private bool game;
+        private bool menu;
+        private bool success;
+        private int step;
+//        private int player;
+
+        private Scale curScale;
+        private Scale nextScale;
+
+        public void Start()
         {
             var hConsole = DllImports.GetStdHandle(-11);
             DllImports.SetConsoleDisplayMode(hConsole, 1, out var x);
             round = 0;
-            delta = 0;
+//            delta = 0;
             players = 0;
             success = false;
             game = false;
@@ -26,7 +51,7 @@ namespace GameWithConsoleInterface
                 success = Int32.TryParse(a, out players);
                 if (success && players > 1)
                     for (var i = 1; i <= players; i++)
-                        armys.Add(i.ToString(), new Army());
+                        armys.Add(i.ToString(), new Army(i.ToString()));
                 else
                     Console.WriteLine("\nНеправильный формат ввода\n");
             }
@@ -34,15 +59,15 @@ namespace GameWithConsoleInterface
             MainMenu();
         }
 
-        protected override void MainMenu()
+        private void MainMenu()
         {
             Console.WriteLine();
             PrintRound("ПОДГОТОВКА");
             while (menu)
             {
                 Console.WriteLine("\n1 - вывести все юниты    2 - создать стек    3 - вывести все стеки    4 - вывести все армии    5 - добавить стек в армию    " +
-                                  "6 - удалить стек из армии    7 - список способностей    8 - список временных модификаторов    9 - изменить инициативу стека    " +
-                                  "10 - начать    0 - выход");
+                                  "6 - удалить стек из армии    7 - список способностей    8 - список временных модификаторов    " + "9 - шкала инициативы    10 - начать    " +
+                                  "0 - выход");
                 var a = Console.ReadLine();
                 switch (a)
                 {
@@ -74,8 +99,14 @@ namespace GameWithConsoleInterface
                     case "8":
                         PrintTempMods();
                         break;
+//                    case "9":
+//                        ChangeInitiative();
+//                        break;
                     case "9":
-                        ChangeInitiative();
+                        curScale = new Scale(stacks);
+                        Console.WriteLine();
+                        PrintInitiative3(curScale);
+                        Console.WriteLine();
                         break;
                     case "10":
                         menu = false;
@@ -97,51 +128,72 @@ namespace GameWithConsoleInterface
             if (!GAME)
                 Environment.Exit(0);
 
-            game = true;
             StartRound();
         }
 
-        protected override void StartRound()
+        private void StartRound()
         {
             step = 0;
             Console.WriteLine();
             PrintRound("РАУНД " + (++round));
-            player = players - 1 + (delta++);
+            nextScale = new Scale(stacks);
             while (GAME && IsTurn())
             {
                 IsWinner();
-                player = (player + 1) % players;
-                var playerArmy = (player + 1).ToString();
-                while (!armys[playerArmy].CanTurn())
-                {
-                    player = (player + 1) % players;
-                    playerArmy = (player + 1).ToString();
-                }
+//                player = (player + 1) % players;
+//                var playerArmy = (player + 1).ToString();
+//                while (!armys[playerArmy].CanTurn())
+//                {
+//                    player = (player + 1) % players;
+//                    playerArmy = (player + 1).ToString();
+//                }
+//
+//                var playerStack = armys[playerArmy].GetStack();
 
-                var playerStack = armys[playerArmy].GetStack();
-                Console.WriteLine("\nХод {2}. Очередь игрока {0}. Стек {1}\n", player + 1, playerStack.Name, (++step));
+                curScale = new Scale(stacks);
+                playerStack = curScale.GetStack();
+                Console.WriteLine("\nХод {2}. Очередь игрока {0}. Стек {1}\n", playerStack.Army.Name, playerStack.Name, (++step));
                 PrintStack(playerStack);
-                var k = false;
-                while (!k)
+                game = true;
+                while (game)
                 {
-                    Console.WriteLine("\nВыберите действие\n\n1 - атаковать стек, 2 - использовать способность, 3 - бездействие, 0 - выход");
+                    Console.WriteLine(
+                        "\nВыберите действие\n\n1 - атаковать стек    2 - использовать способность    3 - оборона    4 - ожидание    5 - шкала инициативы    0 - выход");
                     var a = Console.ReadLine();
                     Console.WriteLine();
                     switch (a)
                     {
                         case "0":
-                            k = true;
+                            game = false;
                             GAME = false;
                             break;
                         case "1":
-                            k = Attack(playerStack);
+                            game = !Attack(playerStack);
                             break;
                         case "2":
-                            k = Cast(playerStack);
+                            game = !Cast(playerStack);
                             break;
                         case "3":
-                            k = true;
-                            Pass(playerStack);
+                            game = false;
+                            playerStack.Defend();
+                            break;
+                        case "4":
+                            try
+                            {
+                                curScale.ch(playerStack);
+                                game = false;
+                            }
+                            catch (MyException e)
+                            {
+                                Console.WriteLine(e.Message);
+                            }
+
+                            break;
+                        case "5":
+                            PrintInitiative1(curScale);
+                            Console.Write("| ");
+                            PrintInitiative2(nextScale);
+                            Console.WriteLine();
                             break;
                         default:
                             Console.WriteLine("Такой команды нет");
@@ -157,20 +209,25 @@ namespace GameWithConsoleInterface
                 Environment.Exit(0);
             }
 
+            foreach (var stack in stacks.Values)
+            {
+                stack.Initiative = stack.Unit.Initiative;
+            }
+
             IsWinner();
             NextRound();
             menu = true;
             MainMenu();
         }
 
-        protected override void PrintRound(string s)
+        private void PrintRound(string s)
         {
             PrintCenter("");
             PrintCenter(s);
             PrintCenter("");
         }
 
-        protected override void PrintUnits()
+        private void PrintUnits()
         {
             Console.WriteLine();
             foreach (var i in units)
@@ -184,7 +241,7 @@ namespace GameWithConsoleInterface
             Console.WriteLine();
         }
 
-        protected override void PrintUnit(Unit unit)
+        private void PrintUnit(Unit unit)
         {
             Console.Write(
                 "Имя - {0}, тип - {7}, здоровье - {1}, атака - {2}, защита - {3}, разброс урона - {4}-{5}, инициатива - {6}, способности: ",
@@ -195,7 +252,7 @@ namespace GameWithConsoleInterface
             Console.WriteLine();
         }
 
-        protected override void CreateStack()
+        private void CreateStack()
         {
             Console.WriteLine("Введите название стека");
             var r = Console.ReadLine();
@@ -214,7 +271,7 @@ namespace GameWithConsoleInterface
                         success = Int32.TryParse(t, out var count);
                         if (success && count > 0 && count < 1000000)
                         {
-                            stacks.Add(r, new BattleUnitsStack(units[(int)type], count, r, new SortedDictionary<TempMods, int>()));
+                            stacks.Add(r, new BattleUnitsStack(units[(int) type], count, r, new SortedDictionary<TempMods, int>()));
                             Console.WriteLine("\nСтек успешно создан");
                         }
                         else
@@ -228,7 +285,7 @@ namespace GameWithConsoleInterface
                 Console.WriteLine("\nСтек с таким названием уже существует");
         }
 
-        protected override void PrintStacks()
+        private void PrintStacks()
         {
             Console.WriteLine();
             foreach (var i in stacks)
@@ -242,16 +299,16 @@ namespace GameWithConsoleInterface
             Console.WriteLine();
         }
 
-        protected override void PrintStack(BattleUnitsStack stack)
+        private void PrintStack(BattleUnitsStack stack)
         {
             Console.Write("Юнит - {0}, количество - {1}, здоровье последнего - {2}, инициатива - {3}, временные моды: ",
-                stack.unit.Id, stack.CurrentCount, stack.CurrentHealth, stack.Initiative);
+                stack.Unit.Id, stack.CurrentCount, stack.CurrentHealth, stack.Initiative);
             foreach (var i in stack.SelfMods)
                 Console.Write(i.Key + " (осталось: {0})    ", i.Value == -1 ? "бесконечно" : i.Value.ToString());
             Console.WriteLine();
         }
 
-        protected override void PrintArmys()
+        private void PrintArmys()
         {
             Console.WriteLine();
             foreach (var i in armys)
@@ -265,15 +322,55 @@ namespace GameWithConsoleInterface
             Console.WriteLine();
         }
 
-        protected override void PrintArmy(Army army)
+        private void PrintArmy(Army army)
         {
             var s = 0;
-            foreach (var i in army.SelfStacks)
+            foreach (var i in army.SelfStacks.Values)
                 Console.WriteLine("{0}) Стек {1}, юнит - {2}, количество - {3}, здоровье последнего - {4}, инициатива - {5}",
-                    ++s, i.Value.Name, i.Value.unit.Id, i.Value.CurrentCount, i.Value.CurrentHealth, i.Value.Initiative);
+                    ++s, i.Name, i.Unit.Id, i.CurrentCount, i.CurrentHealth, i.Initiative);
         }
 
-        protected override void AddStackToArmy()
+        private void PrintInitiative1(Scale scale)
+        {
+            foreach (var stack in scale.Stacks.Values())
+                Console.Write("--> {0} ({1}) ", stack.Name, stack.Initiative);
+        }
+
+        private void PrintInitiative2(Scale scale)
+        {
+            var a = true;
+            foreach (var stack in scale.Stacks.Values())
+            {
+                if (a)
+                {
+                    Console.Write("{0}", stack.Name);
+                    a = false;
+                }
+                else
+                {
+                    Console.Write(" --> {0}", stack.Name);
+                }
+            }
+        }
+
+        private void PrintInitiative3(Scale scale)
+        {
+            var a = true;
+            foreach (var stack in scale.Stacks.Values())
+            {
+                if (a)
+                {
+                    Console.Write("{0} ({1})", stack.Name, stack.Initiative);
+                    a = false;
+                }
+                else
+                {
+                    Console.Write(" --> {0} ({1})", stack.Name, stack.Initiative);
+                }
+            }
+        }
+
+        private void AddStackToArmy()
         {
             Console.WriteLine("Введите название армии");
             var t = Console.ReadLine();
@@ -287,14 +384,14 @@ namespace GameWithConsoleInterface
                     {
                         if (armys[t].Add(stacks[r], r))
                         {
-                            stacks[r].Army = t;
+                            stacks[r].Army = armys[t];
                             Console.WriteLine("\nСтек успешно добавлен");
                         }
                         else
                             Console.WriteLine("Превышено максимальное количество стеков в армии");
                     }
                     else
-                        Console.WriteLine("\nСтек уже в " + (stacks[r].Army == t ? "этой" : "другой") + " армии");
+                        Console.WriteLine("\nСтек уже в " + (stacks[r].Army == armys[t] ? "этой" : "другой") + " армии");
                 }
                 else
                     Console.WriteLine("\nСтека с таким названием не существует");
@@ -303,13 +400,15 @@ namespace GameWithConsoleInterface
                 Console.WriteLine("\nАрмии с таким названием не существует");
         }
 
-        protected override void DeleteStackFromArmy()
+        private void DeleteStackFromArmy()
         {
             Console.WriteLine("Введите название армии");
             var t = Console.ReadLine();
             if (t != null && armys.ContainsKey(t))
             {
-                Console.WriteLine("Введите название стека");
+                Console.WriteLine();
+                PrintArmy(armys[t]);
+                Console.WriteLine("\nВведите название стека");
                 var r = Console.ReadLine();
                 Console.WriteLine(armys[t].Remove(r) ? "\nСтек успешно удален из армии" : "\nВ этой армии нет стека с таким названием");
             }
@@ -317,18 +416,18 @@ namespace GameWithConsoleInterface
                 Console.WriteLine("\nАрмии с таким названием не существует");
         }
 
-        protected override void PrintAbilities()
+        private void PrintAbilities()
         {
             PrintCenter("СПОСОБНОСТИ");
             Console.WriteLine();
             var lst = Enum.GetValues(typeof(Abilities));
             foreach (var i in lst)
                 Console.WriteLine(i + " - " + GetDescription(i) + " (" +
-                                  (GetIsActive(i) ? "активная" : "пассивная") + ")");
+                                  (BattleUnitsStack.GetIsActive(i) ? "активная" : "пассивная") + ")");
             Console.WriteLine("\n" + (new String('=', Console.WindowWidth)) + "\n\n");
         }
 
-        protected override void PrintTempMods()
+        private void PrintTempMods()
         {
             PrintCenter("МОДИФИКАТОРЫ");
             Console.WriteLine();
@@ -338,33 +437,31 @@ namespace GameWithConsoleInterface
             Console.WriteLine("\n" + (new String('=', Console.WindowWidth)) + "\n\n");
         }
 
-        protected override void ChangeInitiative()
-        {
-            Console.WriteLine("Введите название стека");
-            var t = Console.ReadLine();
-            if (t != null && stacks.ContainsKey(t))
-            {
-                success = false;
-                while (!success)
-                {
-                    Console.WriteLine("Ведите новое значение инициативы");
-                    var r = Console.ReadLine();
-                    success = Single.TryParse(r, out var init);
-                    if (success)
-                    {
-                        stacks[t].Initiative = init;
-                        if (stacks[t].Army != null)
-                            armys[stacks[t].Army].Sort();
-                    }
-                    else
-                        Console.WriteLine("\nНеправильный формат ввода\n");
-                }
-            }
-            else
-                Console.WriteLine("\nСтека с таким названием не существует");
-        }
+//        private void ChangeInitiative()
+//        {
+//            Console.WriteLine("Введите название стека");
+//            var t = Console.ReadLine();
+//            if (t != null && stacks.ContainsKey(t))
+//            {
+//                success = false;
+//                while (!success)
+//                {
+//                    Console.WriteLine("Введите новое значение инициативы");
+//                    var r = Console.ReadLine();
+//                    success = Single.TryParse(r, out var init);
+//                    if (success)
+//                    {
+//                        stacks[t].Initiative = init;
+//                    }
+//                    else
+//                        Console.WriteLine("\nНеправильный формат ввода\n");
+//                }
+//            }
+//            else
+//                Console.WriteLine("\nСтека с таким названием не существует");
+//        }
 
-        protected override bool Attack(BattleUnitsStack attacker)
+        private bool Attack(BattleUnitsStack attacker)
         {
             Console.WriteLine("Введите название защищающегося стека");
             var t = Console.ReadLine();
@@ -376,8 +473,8 @@ namespace GameWithConsoleInterface
                     {
                         var (d1, d2) = attacker.Fight(stacks[t]);
                         Console.WriteLine(
-                            "\nРезльтат:\nСтек {0} нанес стеку {1} {2} единиц урона\nСтек {3}: количество - {4}, здоровье последнего - {5}\n",
-                            attacker.Name, stacks[t].Name, d1, stacks[t].Name, stacks[t].CurrentHealth, stacks[t].CurrentHealth);
+                            "\nРезультат:\nСтек {0} нанес стеку {1} {2} единиц урона\nСтек {3}: количество - {4}, здоровье последнего - {5}\n",
+                            attacker.Name, stacks[t].Name, d1, stacks[t].Name, stacks[t].CurrentCount, stacks[t].CurrentHealth);
                         if (d2 != -1)
                             Console.WriteLine(
                                 "Контратака:\nСтек {0} нанес стеку {1} {2} единиц урона\nСтек {3}: количество - {4}, здоровье последнего - {5}\n",
@@ -391,7 +488,7 @@ namespace GameWithConsoleInterface
                 }
                 else
                 {
-                    Console.WriteLine("Два одинаоквых стека");
+                    Console.WriteLine("Два одинаковых стека");
                     return false;
                 }
             }
@@ -404,12 +501,12 @@ namespace GameWithConsoleInterface
             return true;
         }
 
-        protected override bool Cast(BattleUnitsStack caster)
+        private bool Cast(BattleUnitsStack caster)
         {
             var q = false;
             var abs = new List<Abilities>();
-            foreach (var i in caster.unit.SelfAbilities)
-                if (GetIsActive(i))
+            foreach (var i in caster.Unit.SelfAbilities)
+                if (BattleUnitsStack.GetIsActive(i))
                 {
                     q = true;
                     abs.Add(i);
@@ -427,7 +524,7 @@ namespace GameWithConsoleInterface
             Console.WriteLine();
             var t = Console.ReadLine();
             success = Enum.TryParse<Abilities>(t, out var ability);
-            if (success && caster.unit.SelfAbilities.Contains(ability))
+            if (success && caster.Unit.SelfAbilities.Contains(ability))
             {
                 Console.WriteLine("\nВведите название стека, на который хотите применить способность");
                 t = Console.ReadLine();
@@ -458,11 +555,6 @@ namespace GameWithConsoleInterface
             return true;
         }
 
-        protected override void Pass(BattleUnitsStack stack)
-        {
-            stack.CanTurn = false;
-        }
-
         private static void PrintCenter(string s, char c = '=')
         {
             var n = Console.WindowWidth - s.Length;
@@ -470,7 +562,7 @@ namespace GameWithConsoleInterface
             Console.Write((new String(c, l)) + s + (new String(c, n - l)));
         }
 
-        protected override void IsWinner()
+        private void IsWinner()
         {
             if (GetAliveArmy(out var winner) == 1)
             {
@@ -478,6 +570,43 @@ namespace GameWithConsoleInterface
                 Console.ReadLine();
                 Environment.Exit(0);
             }
+        }
+
+        private static string GetDescription(object enumValue)
+        {
+            return enumValue.GetType()
+                .GetMember(enumValue.ToString())
+                .First()?
+                .GetCustomAttribute<Attr>()?
+                .Description;
+        }
+
+        private static int GetAliveArmy(out string a)
+        {
+            var c = 0;
+            a = null;
+            foreach (var army in armys)
+                if (army.Value.IsAlive())
+                {
+                    a = army.Key;
+                    c++;
+                }
+
+            return c;
+        }
+
+        private static bool IsTurn()
+        {
+            foreach (var stack in stacks.Values)
+                if (stack.CanTurn && stack.IsAlive() && stack.Army != null)
+                    return true;
+            return false;
+        }
+
+        private static void NextRound()
+        {
+            foreach (var i in stacks.Values)
+                i.NextRound();
         }
 
         internal static class DllImports

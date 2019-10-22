@@ -13,6 +13,7 @@
         [AbilitiesAttr("Увеличивает защиту цели на 10 на 1 ход", true)] Shield,
         [AbilitiesAttr("Запрещает цели атаковать на 1 ход", true)] Disarm,
         [AbilitiesAttr("Запрещает цели использовать способности на 1 ход", true)] Silence,
-        [AbilitiesAttr("Оглушает цель на 1 ход", true)] Stun
+        [AbilitiesAttr("Оглушает цель на 1 ход", true)] Stun,
+        [AbilitiesAttr("Увеличивает инициативу цели на 30%", true)] Haste
     }
 }

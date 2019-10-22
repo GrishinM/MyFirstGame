@@ -7,5 +7,21 @@
         mc:Ignorable="d"
         Title="MainWindow" Height="450" Width="800" WindowState="Maximized" WindowStyle="None">
     <Grid x:Name="grid">
+        <!-- <Button Content="Юниты"></Button> -->
+        <!-- <Button Content="Стеки"></Button> -->
+        <!-- <Button Content="Армии"></Button> -->
+        <!-- <Button Content="Сражение"></Button> -->
+        <!-- <Button Content="Выход"></Button> -->
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"></RowDefinition>
+            <RowDefinition Height="8*"></RowDefinition>
+        </Grid.RowDefinitions>
+        <Button x:Name="Button1" Grid.Row="0" Click="but1" HorizontalAlignment="Left">but1</Button>
+        <Image x:Name="Image" Grid.Row="1" Source="Resources/1.jpg" Stretch="Fill"></Image>
+        <ScrollViewer x:Name="Viewer" Grid.Row="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+            <StackPanel x:Name="StackPanel" Orientation="Horizontal">
+            </StackPanel>
+        </ScrollViewer>
+        <Button x:Name="Button2" Grid.Row="0" HorizontalAlignment="Right">but2</Button>
     </Grid>
 </Window>

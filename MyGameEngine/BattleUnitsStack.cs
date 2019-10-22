@@ -1,6 +1,7 @@
-﻿﻿using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 
 namespace MyGameEngine
 {
@@ -18,7 +19,7 @@ namespace MyGameEngine
         {
             get
             {
-                var x = unit.Attack;
+                var x = Unit.Attack;
                 if (Mods.ContainsKey(TempMods.Desolator))
                 {
                     x += 7;
@@ -32,15 +33,20 @@ namespace MyGameEngine
         {
             get
             {
-                var x = unit.Defence;
+                var x = Unit.Defence;
                 if (Mods.ContainsKey(TempMods.DamageImmunity))
                 {
                     return Int32.MaxValue;
                 }
 
+                if (Mods.ContainsKey(TempMods.Defence))
+                {
+                    x += 5;
+                }
+
                 if (Mods.ContainsKey(TempMods.SuperDefence))
                 {
-                    x += 50;
+                    x += 10;
                 }
 
                 if (Mods.ContainsKey(TempMods.LowerDefence))
@@ -56,7 +62,7 @@ namespace MyGameEngine
         {
             get
             {
-                var x = new Dmg(unit.Damage);
+                var x = new Dmg(Unit.Damage);
                 if (Mods.ContainsKey(TempMods.DoubleDamage))
                 {
                     x.Mul(2);
@@ -71,6 +77,23 @@ namespace MyGameEngine
             }
         }
 
+        private float initiative;
+
+        public float Initiative
+        {
+            get
+            {
+                var x = initiative;
+                if (Mods.ContainsKey(TempMods.Hasted))
+                {
+                    x *= (x > 0) ? 1.3f : 0.7f;
+                }
+
+                return x;
+            }
+            set => initiative = value;
+        }
+
 
         public BattleUnitsStack(Unit unit, int count, string name, SortedDictionary<TempMods, int> mods) : base(unit, count, name)
         {
@@ -78,6 +101,7 @@ namespace MyGameEngine
             CurrentCount = count;
             Mods = mods;
             CanCounterAttack = true;
+            initiative = unit.Initiative;
         }
 
         public bool IsAlive()
@@ -108,7 +132,7 @@ namespace MyGameEngine
             {
                 foreach (var mod in enemy.SelfMods)
                 {
-                    if (!Interface.GetIsPositive(mod.Key))
+                    if (!GetIsPositive(mod.Key))
                         continue;
                     lst.Add((mod.Key, mod.Value));
                     enemy.Mods.Remove(mod.Key);
@@ -119,40 +143,40 @@ namespace MyGameEngine
             var selfAttack = Attack;
             var selfDamge = new Dmg(Damage);
 
-            if (unit.HasAbility(Abilities.Dark) && enemy.unit.HasAbility(Abilities.Light) ||
-                unit.HasAbility(Abilities.Light) && enemy.unit.HasAbility(Abilities.Dark))
+            if (Unit.HasAbility(Abilities.Dark) && enemy.Unit.HasAbility(Abilities.Light) ||
+                Unit.HasAbility(Abilities.Light) && enemy.Unit.HasAbility(Abilities.Dark))
                 selfDamge.Mul(1.2);
 
-            if (unit.HasAbility(Abilities.Headshot) && enemy.unit.Type != Types.Building)
+            if (Unit.HasAbility(Abilities.Headshot) && enemy.Unit.Type != Types.Building)
             {
                 if (rand.Next(0, 100) < 40)
                     selfDamge.Add(100);
             }
 
-            if (unit.HasAbility(Abilities.FireDamage) && enemy.unit.HasAbility(Abilities.ImmuneToFire))
+            if (Unit.HasAbility(Abilities.FireDamage) && enemy.Unit.HasAbility(Abilities.ImmuneToFire))
                 selfDamge.Mul(0.5);
 
-            if (unit.HasAbility(Abilities.FireDamage) && enemy.unit.Type == Types.Building)
+            if (Unit.HasAbility(Abilities.FireDamage) && enemy.Unit.Type == Types.Building)
                 selfDamge.Mul(0);
 
-            var dm = rand.Next(selfDamge.Item1(), selfDamge.Item2());
+            var dm = rand.Next(selfDamge.Item1(), selfDamge.Item2() + 1);
             var dmg = Convert.ToInt32((selfAttack > enemyDefence)
                 ? CurrentCount * dm * (1 + 0.05 * (selfAttack - enemyDefence))
                 : CurrentCount * dm / (1 + 0.05 * (enemyDefence - selfAttack)));
 
-            var a = (enemy.CurrentCount - 1) * enemy.unit.Hitpoints + enemy.CurrentHealth;
+            var a = (enemy.CurrentCount - 1) * enemy.Unit.Hitpoints + enemy.CurrentHealth;
             a -= dmg;
             if (a > 0)
             {
-                if (a % enemy.unit.Hitpoints == 0)
+                if (a % enemy.Unit.Hitpoints == 0)
                 {
-                    enemy.CurrentCount = a / enemy.unit.Hitpoints;
-                    enemy.CurrentHealth = enemy.unit.Hitpoints;
+                    enemy.CurrentCount = a / enemy.Unit.Hitpoints;
+                    enemy.CurrentHealth = enemy.Unit.Hitpoints;
                 }
                 else
                 {
-                    enemy.CurrentCount = a / enemy.unit.Hitpoints + 1;
-                    enemy.CurrentHealth = a % enemy.unit.Hitpoints;
+                    enemy.CurrentCount = a / enemy.Unit.Hitpoints + 1;
+                    enemy.CurrentHealth = a % enemy.Unit.Hitpoints;
                 }
             }
             else
@@ -189,10 +213,10 @@ namespace MyGameEngine
             if (Mods.ContainsKey(TempMods.Silenced))
                 throw new MyException("На стеке молчание");
 
-            if (!unit.HasAbility(ability))
+            if (!Unit.HasAbility(ability))
                 throw new MyException("У этого юнита нет такой способности");
 
-            if (!Interface.GetIsActive(ability))
+            if (!GetIsActive(ability))
                 throw new MyException("Эта способность пассивная");
 
             switch (ability)
@@ -217,13 +241,27 @@ namespace MyGameEngine
                     break;
                 case Abilities.Heavenly_Grace:
                     foreach (var mod in target.SelfMods.Keys)
-                        if (Interface.GetIsPositive(mod))
+                        if (GetIsPositive(mod))
                             target.Mods.Remove(mod);
+                    break;
+                case Abilities.Haste:
+                    target.AddMod(TempMods.Hasted, 1);
                     break;
                 default:
                     throw new MyException("Способность не применена");
             }
 
+            CanTurn = false;
+        }
+
+        public void Pass()
+        {
+            CanTurn = false;
+        }
+
+        public void Defend()
+        {
+            AddMod(TempMods.Defence, 1);
             CanTurn = false;
         }
 
@@ -251,6 +289,24 @@ namespace MyGameEngine
 
             CanTurn = true;
             CanCounterAttack = true;
+        }
+
+        public static bool GetIsPositive(object enumValue)
+        {
+            return enumValue.GetType()
+                .GetMember(enumValue.ToString())
+                .First()
+                .GetCustomAttribute<ModsAttr>()
+                .IsPositive;
+        }
+
+        public static bool GetIsActive(object enumValue)
+        {
+            return enumValue.GetType()
+                .GetMember(enumValue.ToString())
+                .First()
+                .GetCustomAttribute<AbilitiesAttr>()
+                .IsActive;
         }
     }
 }

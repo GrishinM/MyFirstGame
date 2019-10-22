@@ -7,3 +7,4 @@
 **/*.csproj
 **/*.sln
 **/*.config
+*.docx

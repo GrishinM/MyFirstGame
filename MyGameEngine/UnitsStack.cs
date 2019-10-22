@@ -4,21 +4,21 @@ namespace MyGameEngine
 {
     public class UnitsStack
     {
-        public string Army;
+        public Army Army;
         public readonly string Name;
-        public Unit unit { get; }
+        public Unit Unit { get; }
         public int Count { get; }
         public bool CanTurn;
-        public float Initiative { get; set; }
+        //public float Initiative { get; set; }
 
         protected UnitsStack(Unit unit, int count, string name)
         {
-            this.unit = unit;
+            Unit = unit;
             Count = count;
             Name = name;
             Army = null;
             CanTurn = true;
-            Initiative = unit.Initiative;
+            //Initiative = unit.Initiative;
         }
 
 //        public bool IsAlive()

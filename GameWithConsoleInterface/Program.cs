@@ -1,4 +1,6 @@
-﻿namespace GameWithConsoleInterface
+﻿using System;
+
+namespace GameWithConsoleInterface
 {
     class Program
     {
