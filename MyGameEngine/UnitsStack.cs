@@ -4,11 +4,11 @@ namespace MyGameEngine
 {
     public class UnitsStack
     {
-        public Army Army;
-        public readonly string Name;
+        public Army Army { get; set; }
+        public string Name { get; }
         public Unit Unit { get; }
         public int Count { get; }
-        public bool CanTurn;
+        public bool CanTurn { get; protected set; }
         //public float Initiative { get; set; }
 
         protected UnitsStack(Unit unit, int count, string name)

@@ -15,8 +15,7 @@ namespace GameWithConsoleInterface
         private static readonly Unit[] units =
         {
             new Abaddon(), new Axe(), new Dark_Seer(), new Doom(), new Drow_Ranger(), new Huskar(), new Juggernaut(), new Keeper_of_the_Light(), new Lich(),
-            new Line_meleee_creep(),
-            new Omniknight(), new Sniper(), new Sven(), new Tower()
+            new Line_meleee_creep(), new Omniknight(), new Sniper(), new Sven(), new Tower()
         };
 
         private BattleUnitsStack playerStack;
@@ -152,7 +151,7 @@ namespace GameWithConsoleInterface
 
                 curScale = new Scale(stacks);
                 playerStack = curScale.GetStack();
-                Console.WriteLine("\nХод {2}. Очередь игрока {0}. Стек {1}\n", playerStack.Army.Name, playerStack.Name, (++step));
+                Console.WriteLine($"\nХод {++step}. Очередь игрока {playerStack.Army.Name}. Стек {playerStack.Name}\n");
                 PrintStack(playerStack);
                 game = true;
                 while (game)
@@ -271,7 +270,7 @@ namespace GameWithConsoleInterface
                         success = Int32.TryParse(t, out var count);
                         if (success && count > 0 && count < 1000000)
                         {
-                            stacks.Add(r, new BattleUnitsStack(units[(int) type], count, r, new SortedDictionary<TempMods, int>()));
+                            stacks.Add(r, new BattleUnitsStack(units[(int) type], count, r));
                             Console.WriteLine("\nСтек успешно создан");
                         }
                         else
@@ -303,7 +302,7 @@ namespace GameWithConsoleInterface
         {
             Console.Write("Юнит - {0}, количество - {1}, здоровье последнего - {2}, инициатива - {3}, временные моды: ",
                 stack.Unit.Id, stack.CurrentCount, stack.CurrentHealth, stack.Initiative);
-            foreach (var i in stack.SelfMods)
+            foreach (var i in stack.Mods)
                 Console.Write(i.Key + " (осталось: {0})    ", i.Value == -1 ? "бесконечно" : i.Value.ToString());
             Console.WriteLine();
         }

@@ -6,26 +6,20 @@ namespace MyGameEngine
 {
     public class Scale
     {
-        public PriorityQueue<BattleUnitsStack> Stacks;
+        public PriorityQueue<BattleUnitsStack> Stacks { get; }
 
         public Scale(SortedDictionary<string, BattleUnitsStack> stacks)
         {
             Stacks = new PriorityQueue<BattleUnitsStack>();
-            foreach (var stack in stacks.Values)
+            foreach (var stack in stacks.Values.Where(stack => stack.CanTurn && stack.IsAlive() && stack.Army != null))
             {
-                if (stack.CanTurn && stack.IsAlive() && stack.Army != null)
-                {
-                    Stacks.Add(stack.Initiative, stack);
-                }
+                Stacks.Add(stack.Initiative, stack);
             }
-
-            var a = Stacks.Values();
         }
 
         public BattleUnitsStack GetStack()
         {
-            var ans = Stacks.Get();
-            return ans;
+            return Stacks.Get();
         }
 
         public void ch(BattleUnitsStack stack)

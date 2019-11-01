@@ -5,6 +5,5 @@
 **/Properties
 **/obj
 **/*.csproj
-**/*.sln
 **/*.config
 *.docx

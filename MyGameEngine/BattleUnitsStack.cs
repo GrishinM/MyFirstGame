@@ -8,19 +8,19 @@ namespace MyGameEngine
     public class BattleUnitsStack : UnitsStack
     {
         private readonly Random rand = new Random();
-        public int CurrentHealth;
-        public int CurrentCount;
+        public int CurrentHealth { get; private set; }
+        public int CurrentCount { get; private set; }
         private bool CanCounterAttack;
-        private SortedDictionary<TempMods, int> Mods { get; }
+        private readonly SortedDictionary<TempMods, int> mods;
 
-        public SortedDictionary<TempMods, int> SelfMods => new SortedDictionary<TempMods, int>(Mods);
+        public SortedDictionary<TempMods, int> Mods => new SortedDictionary<TempMods, int>(mods);
 
         private int Attack
         {
             get
             {
                 var x = Unit.Attack;
-                if (Mods.ContainsKey(TempMods.Desolator))
+                if (mods.ContainsKey(TempMods.Desolator))
                 {
                     x += 7;
                 }
@@ -34,22 +34,22 @@ namespace MyGameEngine
             get
             {
                 var x = Unit.Defence;
-                if (Mods.ContainsKey(TempMods.DamageImmunity))
+                if (mods.ContainsKey(TempMods.DamageImmunity))
                 {
                     return Int32.MaxValue;
                 }
 
-                if (Mods.ContainsKey(TempMods.Defence))
+                if (mods.ContainsKey(TempMods.Defence))
                 {
                     x += 5;
                 }
 
-                if (Mods.ContainsKey(TempMods.SuperDefence))
+                if (mods.ContainsKey(TempMods.SuperDefence))
                 {
                     x += 10;
                 }
 
-                if (Mods.ContainsKey(TempMods.LowerDefence))
+                if (mods.ContainsKey(TempMods.LowerDefence))
                 {
                     x -= 10;
                 }
@@ -63,12 +63,12 @@ namespace MyGameEngine
             get
             {
                 var x = new Dmg(Unit.Damage);
-                if (Mods.ContainsKey(TempMods.DoubleDamage))
+                if (mods.ContainsKey(TempMods.DoubleDamage))
                 {
                     x.Mul(2);
                 }
 
-                if (Mods.ContainsKey(TempMods.UpperDamage))
+                if (mods.ContainsKey(TempMods.UpperDamage))
                 {
                     x.Add(40);
                 }
@@ -84,7 +84,7 @@ namespace MyGameEngine
             get
             {
                 var x = initiative;
-                if (Mods.ContainsKey(TempMods.Hasted))
+                if (mods.ContainsKey(TempMods.Hasted))
                 {
                     x *= (x > 0) ? 1.3f : 0.7f;
                 }
@@ -95,13 +95,20 @@ namespace MyGameEngine
         }
 
 
-        public BattleUnitsStack(Unit unit, int count, string name, SortedDictionary<TempMods, int> mods) : base(unit, count, name)
+        public BattleUnitsStack(Unit unit, int count, string name) : base(unit, count, name)
         {
+            mods=new SortedDictionary<TempMods, int>();
             CurrentHealth = unit.Hitpoints;
             CurrentCount = count;
-            Mods = mods;
             CanCounterAttack = true;
             initiative = unit.Initiative;
+        }
+
+        public BattleUnitsStack(Unit unit, int count, string name, int currentCount, int currentHealth, SortedDictionary<TempMods, int> mods) : this(unit, count, name)
+        {
+            CurrentHealth = currentHealth;
+            CurrentCount = currentCount;
+            this.mods = mods;
         }
 
         public bool IsAlive()
@@ -118,24 +125,24 @@ namespace MyGameEngine
             if (!isCounter && !CanTurn)
                 throw new MyException("Стек уже ходил в этом раунде");
 
-            if (!isCounter && Mods.ContainsKey(TempMods.Stunned))
+            if (!isCounter && mods.ContainsKey(TempMods.Stunned))
                 throw new MyException("Стек оглушен");
 
-            if (!isCounter && Mods.ContainsKey(TempMods.Disarmed))
+            if (!isCounter && mods.ContainsKey(TempMods.Disarmed))
                 throw new MyException("Стек не может атаковать");
 
             if (!enemy.IsAlive())
                 throw new MyException("Защищающийся стек уже мертв");
 
             var lst = new List<(TempMods, int)>();
-            if (enemy.Mods.ContainsKey(TempMods.Breaked))
+            if (enemy.mods.ContainsKey(TempMods.Breaked))
             {
-                foreach (var mod in enemy.SelfMods)
+                foreach (var mod in enemy.Mods)
                 {
                     if (!GetIsPositive(mod.Key))
                         continue;
                     lst.Add((mod.Key, mod.Value));
-                    enemy.Mods.Remove(mod.Key);
+                    enemy.mods.Remove(mod.Key);
                 }
             }
 
@@ -181,8 +188,8 @@ namespace MyGameEngine
             }
             else
             {
-                enemy.CurrentCount = enemy.Mods.ContainsKey(TempMods.Immortal) ? 1 : 0;
-                enemy.CurrentHealth = enemy.Mods.ContainsKey(TempMods.Immortal) ? 1 : 0;
+                enemy.CurrentCount = enemy.mods.ContainsKey(TempMods.Immortal) ? 1 : 0;
+                enemy.CurrentHealth = enemy.mods.ContainsKey(TempMods.Immortal) ? 1 : 0;
             }
 
 //            message = string.Format("\n{6}:\nСтек {0} нанес стеку {1} {2} единиц урона\nСтек {3}: количество - {4}, здоровье последнего - {5}", Name, enemy.Name, dmg, enemy.Name,
@@ -195,7 +202,7 @@ namespace MyGameEngine
             }
 
             foreach (var (m, c) in lst)
-                enemy.Mods.Add(m, c);
+                enemy.mods.Add(m, c);
             if (!isCounter)
                 CanTurn = false;
 
@@ -207,10 +214,10 @@ namespace MyGameEngine
             if (!CanTurn)
                 throw new MyException("Стек уже ходил в этом раунде");
 
-            if (Mods.ContainsKey(TempMods.Stunned))
+            if (mods.ContainsKey(TempMods.Stunned))
                 throw new MyException("Стек оглушен");
 
-            if (Mods.ContainsKey(TempMods.Silenced))
+            if (mods.ContainsKey(TempMods.Silenced))
                 throw new MyException("На стеке молчание");
 
             if (!Unit.HasAbility(ability))
@@ -240,9 +247,9 @@ namespace MyGameEngine
                     target.AddMod(TempMods.SuperDefence, 1);
                     break;
                 case Abilities.Heavenly_Grace:
-                    foreach (var mod in target.SelfMods.Keys)
+                    foreach (var mod in target.Mods.Keys)
                         if (GetIsPositive(mod))
-                            target.Mods.Remove(mod);
+                            target.mods.Remove(mod);
                     break;
                 case Abilities.Haste:
                     target.AddMod(TempMods.Hasted, 1);
@@ -267,24 +274,24 @@ namespace MyGameEngine
 
         private void AddMod(TempMods mod, int count = -1)
         {
-            if (Mods.ContainsKey(mod))
+            if (mods.ContainsKey(mod))
             {
-                if (Mods[mod] != -1 && (count > Mods[mod] || count == -1))
-                    Mods[mod] = count;
+                if (mods[mod] != -1 && (count > mods[mod] || count == -1))
+                    mods[mod] = count;
             }
             else
-                Mods.Add(mod, count);
+                mods.Add(mod, count);
         }
 
         public void NextRound()
         {
-            var ModsCopyKeys = Mods.Keys.ToList();
+            var ModsCopyKeys = mods.Keys.ToList();
             foreach (var mod in ModsCopyKeys)
             {
-                if (Mods[mod] > 1)
-                    Mods[mod]--;
-                else if (Mods[mod] == 1)
-                    Mods.Remove(mod);
+                if (mods[mod] > 1)
+                    mods[mod]--;
+                else if (mods[mod] == 1)
+                    mods.Remove(mod);
             }
 
             CanTurn = true;

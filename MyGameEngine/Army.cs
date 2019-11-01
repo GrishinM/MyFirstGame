@@ -6,8 +6,8 @@ namespace MyGameEngine
 {
     public class Army
     {
-        private int Count;
-        public string Name;
+        private int Count => Stacks.Count;
+        public string Name { get; }
         private readonly Dictionary<string, BattleUnitsStack> Stacks;
 
         public Dictionary<string, BattleUnitsStack> SelfStacks =>
@@ -16,15 +16,18 @@ namespace MyGameEngine
         public Army(string name)
         {
             Stacks = new Dictionary<string, BattleUnitsStack>();
-            Count = 0;
             Name = name;
+        }
+
+        public Army(string name, Dictionary<string, BattleUnitsStack> stacks): this(name)
+        {
+            Stacks = stacks;
         }
 
         public bool Add(BattleUnitsStack stack, string name)
         {
             if (Count > 5)
                 return false;
-            Count++;
             Stacks.Add(name, stack);
             return true;
         }
@@ -33,7 +36,6 @@ namespace MyGameEngine
         {
             if (!Stacks.TryGetValue(name, out var st))
                 return false;
-            Count--;
             Stacks.Remove(name);
             st.Army = null;
             return true;
