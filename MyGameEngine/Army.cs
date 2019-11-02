@@ -6,44 +6,44 @@ namespace MyGameEngine
 {
     public class Army
     {
-        private int Count => Stacks.Count;
+        private int Count => stacks.Count;
         public string Name { get; }
-        private readonly Dictionary<string, BattleUnitsStack> Stacks;
+        private readonly Dictionary<string, BattleUnitsStack> stacks;
 
-        public Dictionary<string, BattleUnitsStack> SelfStacks =>
-            new Dictionary<string, BattleUnitsStack>(Stacks);
+        public Dictionary<string, BattleUnitsStack> Stacks => new Dictionary<string, BattleUnitsStack>(stacks);
 
         public Army(string name)
         {
-            Stacks = new Dictionary<string, BattleUnitsStack>();
+            stacks = new Dictionary<string, BattleUnitsStack>();
             Name = name;
         }
 
         public Army(string name, Dictionary<string, BattleUnitsStack> stacks): this(name)
         {
-            Stacks = stacks;
+            this.stacks = stacks;
         }
 
-        public bool Add(BattleUnitsStack stack, string name)
+        public bool Add(BattleUnitsStack stack)
         {
             if (Count > 5)
                 return false;
-            Stacks.Add(name, stack);
+            stacks.Add(stack.Name, stack);
+            stack.Army = this;
             return true;
         }
 
         public bool Remove(string name)
         {
-            if (!Stacks.TryGetValue(name, out var st))
+            if (!stacks.TryGetValue(name, out var stack))
                 return false;
-            Stacks.Remove(name);
-            st.Army = null;
+            stacks.Remove(name);
+            stack.Army = null;
             return true;
         }
 
         public bool IsAlive()
         {
-            foreach (var stack in Stacks.Values)
+            foreach (var stack in stacks.Values)
                 if (stack.IsAlive())
                     return true;
             return false;
@@ -51,7 +51,7 @@ namespace MyGameEngine
 
         public bool CanTurn()
         {
-            foreach (var stack in Stacks)
+            foreach (var stack in stacks)
                 if (stack.Value.CanTurn)
                     return true;
             return false;

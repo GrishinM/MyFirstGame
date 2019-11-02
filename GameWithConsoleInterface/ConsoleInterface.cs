@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using MyGameEngine;
+using System.Xml.Linq;
 
 namespace GameWithConsoleInterface
 {
@@ -19,16 +21,19 @@ namespace GameWithConsoleInterface
         };
 
         private BattleUnitsStack playerStack;
+
         private int round;
+
 //        private int delta;
         private int players;
         private bool GAME;
         private bool game;
         private bool menu;
         private bool success;
-        private int step;
-//        private int player;
 
+        private int step;
+
+//        private int player;
         private Scale curScale;
         private Scale nextScale;
 
@@ -43,9 +48,27 @@ namespace GameWithConsoleInterface
             game = false;
             GAME = true;
             menu = true;
+            Console.WriteLine("1 - новая игра    2 - загрузить игру");
+            switch (Console.ReadLine())
+            {
+                case "1":
+                    NewGame();
+                    break;
+                case "2":
+                    LoadGame();
+                    break;
+                default:
+                    Console.WriteLine("Такой команды нет");
+                    break;
+            }
+        }
+
+        private void NewGame()
+        {
+            success = false;
             while (!success || players < 2)
             {
-                Console.Out.WriteLine("Введите количество игроков");
+                Console.Out.WriteLine("\nВведите количество игроков");
                 var a = Console.ReadLine();
                 success = Int32.TryParse(a, out players);
                 if (success && players > 1)
@@ -58,6 +81,91 @@ namespace GameWithConsoleInterface
             MainMenu();
         }
 
+        private void LoadGame()
+        {
+            Console.WriteLine("\nВведите название файла");
+            var a = Console.ReadLine();
+            if (!File.Exists(a + ".xml"))
+            {
+                Console.WriteLine("\nТакого файла не существует\n");
+                Start();
+            }
+
+            armys.Clear();
+            stacks.Clear();
+            var doc = XDocument.Load(a + ".xml");
+            foreach (var army_node in doc.Element("Armys").Elements("Army"))
+            {
+                var army_name = army_node.Attribute("name").Value;
+                var army = new Army(army_name);
+                foreach (var stack_node in army_node.Element("BattleUnitsStacks").Elements("BattleUnitsStack"))
+                {
+                    success = Enum.TryParse<Units>(stack_node.Attribute("unit").Value, out var unit);
+                    var stack_name = stack_node.Attribute("name").Value;
+                    var count = Convert.ToInt32(stack_node.Attribute("count").Value);
+                    var currentcount = Convert.ToInt32(stack_node.Attribute("currentcount").Value);
+                    var currenthealth = Convert.ToInt32(stack_node.Attribute("currenthealth").Value);
+                    var mods = new SortedDictionary<TempMods, int>();
+                    foreach (var mod_node in stack_node.Element("TempMods").Elements("TempMod"))
+                    {
+                        success = Enum.TryParse<TempMods>(mod_node.Attribute("name").Value, out var mod);
+                        var mod_count = Convert.ToInt32(mod_node.Attribute("count").Value);
+                        mods.Add(mod, mod_count);
+                    }
+
+                    var stack = new BattleUnitsStack(units[(int) unit], count, stack_name, currentcount, currenthealth, mods);
+                    army.Add(stack);
+                    stacks.Add(stack_name, stack);
+                }
+
+                armys.Add(army_name, army);
+            }
+
+            MainMenu();
+        }
+
+        private void SaveGame()
+        {
+            Console.WriteLine("\nВведите название файла");
+            var a = Console.ReadLine();
+            var doc = new XDocument();
+            var root = new XElement("Armys");
+            foreach (var army in armys.Values)
+            {
+                var army_node = new XElement("Army");
+                army_node.Add(new XAttribute("name", army.Name));
+                var stacks_node = new XElement("BattleUnitsStacks");
+                foreach (var stack in army.Stacks.Values)
+                {
+                    var stack_node = new XElement("BattleUnitsStack");
+                    stack_node.Add(new XAttribute("name", stack.Name));
+                    stack_node.Add(new XAttribute("unit", stack.Unit.Id));
+                    stack_node.Add(new XAttribute("count", stack.Count));
+                    stack_node.Add(new XAttribute("currentcount", stack.CurrentCount));
+                    stack_node.Add(new XAttribute("currenthealth", stack.CurrentHealth));
+                    var mods_node = new XElement("TempMods");
+                    foreach (var mod in stack.Mods)
+                    {
+                        var mod_node = new XElement("TempMod");
+                        mod_node.Add(new XAttribute("name", mod.Key));
+                        mod_node.Add(new XAttribute("count", mod.Value));
+                        mods_node.Add(mod_node);
+                    }
+
+                    stack_node.Add(mods_node);
+                    stacks_node.Add(stack_node);
+                }
+
+                army_node.Add(stacks_node);
+                root.Add(army_node);
+            }
+
+            doc.Add(root);
+            doc.Save(a + ".xml");
+            Console.WriteLine("\nИгра успешно сохранена");
+            MainMenu();
+        }
+
         private void MainMenu()
         {
             Console.WriteLine();
@@ -66,7 +174,7 @@ namespace GameWithConsoleInterface
             {
                 Console.WriteLine("\n1 - вывести все юниты    2 - создать стек    3 - вывести все стеки    4 - вывести все армии    5 - добавить стек в армию    " +
                                   "6 - удалить стек из армии    7 - список способностей    8 - список временных модификаторов    " + "9 - шкала инициативы    10 - начать    " +
-                                  "0 - выход");
+                                  "11 - сохранить игру    0 - выход");
                 var a = Console.ReadLine();
                 switch (a)
                 {
@@ -109,6 +217,9 @@ namespace GameWithConsoleInterface
                         break;
                     case "10":
                         menu = false;
+                        break;
+                    case "11":
+                        SaveGame();
                         break;
                     default:
                         Console.WriteLine("Такой команды нет");
@@ -324,7 +435,7 @@ namespace GameWithConsoleInterface
         private void PrintArmy(Army army)
         {
             var s = 0;
-            foreach (var i in army.SelfStacks.Values)
+            foreach (var i in army.Stacks.Values)
                 Console.WriteLine("{0}) Стек {1}, юнит - {2}, количество - {3}, здоровье последнего - {4}, инициатива - {5}",
                     ++s, i.Name, i.Unit.Id, i.CurrentCount, i.CurrentHealth, i.Initiative);
         }
@@ -381,9 +492,8 @@ namespace GameWithConsoleInterface
                 {
                     if (stacks[r].Army == null)
                     {
-                        if (armys[t].Add(stacks[r], r))
+                        if (armys[t].Add(stacks[r]))
                         {
-                            stacks[r].Army = armys[t];
                             Console.WriteLine("\nСтек успешно добавлен");
                         }
                         else
