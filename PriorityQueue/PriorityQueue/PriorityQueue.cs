@@ -24,7 +24,7 @@ namespace PriorityQueue
             return null;
         }
 
-        public List<T> Values()
+        public IEnumerable<T> Values()
         {
             var ans=new List<T>();
             var k = queue.Values.ToList();

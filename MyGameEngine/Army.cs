@@ -1,6 +1,8 @@
-﻿﻿using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Newtonsoft.Json;
+
 
 namespace MyGameEngine
 {
@@ -9,7 +11,7 @@ namespace MyGameEngine
         private int Count => stacks.Count;
         public string Name { get; }
         private readonly Dictionary<string, BattleUnitsStack> stacks;
-
+        
         public Dictionary<string, BattleUnitsStack> Stacks => new Dictionary<string, BattleUnitsStack>(stacks);
 
         public Army(string name)
@@ -18,7 +20,7 @@ namespace MyGameEngine
             Name = name;
         }
 
-        public Army(string name, Dictionary<string, BattleUnitsStack> stacks): this(name)
+        public Army(string name, Dictionary<string, BattleUnitsStack> stacks) : this(name)
         {
             this.stacks = stacks;
         }
