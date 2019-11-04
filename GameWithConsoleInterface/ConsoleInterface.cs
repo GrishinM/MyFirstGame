@@ -5,8 +5,6 @@ using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using MyGameEngine;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 
 namespace GameWithConsoleInterface
 {
@@ -72,11 +70,14 @@ namespace GameWithConsoleInterface
                 Console.Out.WriteLine("\nВведите количество игроков");
                 var a = Console.ReadLine();
                 success = Int32.TryParse(a, out players);
-                if (success && players > 1)
-                    for (var i = 1; i <= players; i++)
-                        armys.Add(i.ToString(), new Army(i.ToString()));
-                else
+                if (!success || players < 2)
+                {
                     Console.WriteLine("\nНеправильный формат ввода\n");
+                    continue;
+                }
+
+                for (var i = 1; i <= players; i++)
+                    armys.Add(i.ToString(), new Army(i.ToString()));
             }
 
             MainMenu();
@@ -208,7 +209,7 @@ namespace GameWithConsoleInterface
 
                 curScale = new Scale(stacks.Values);
                 playerStack = curScale.GetStack();
-                Console.WriteLine($"\nХод {++step}. Очередь игрока {playerStack.Army.Name}. Стек {playerStack.Name}\n");
+                Console.WriteLine($"\nХод {++step}. Очередь игрока {playerStack.Army.Name}. Стек {playerStack.Name}");
                 PrintStack(playerStack);
                 game = true;
                 while (game)
@@ -284,12 +285,10 @@ namespace GameWithConsoleInterface
         private void PrintUnits()
         {
             Console.WriteLine();
-            foreach (var i in units)
+            foreach (var unit in units)
             {
-                PrintCenter("ЮНИТ " + i.Id);
-                Console.WriteLine();
-                PrintUnit(i);
-                Console.WriteLine("\n\n");
+                PrintCenter("ЮНИТ " + unit.Id);
+                PrintUnit(unit);
             }
 
             Console.WriteLine();
@@ -297,15 +296,14 @@ namespace GameWithConsoleInterface
 
         private void PrintUnit(Unit unit)
         {
-            Console.Write(
-                $"Имя - {unit.Name}, тип - {unit.Type}, здоровье - {unit.Hitpoints}, атака - {unit.Attack}, защита - {unit.Defence}, " +
-                $"разброс урона - {unit.Damage.Item1()}-{unit.Damage.Item2()}, инициатива - {unit.Initiative}, способности: {String.Join(", ", unit.SelfAbilities)}");
-            Console.WriteLine();
+            Console.WriteLine(
+                $"\nИмя - {unit.Name}, тип - {unit.Type}, здоровье - {unit.Hitpoints}, атака - {unit.Attack}, защита - {unit.Defence}, " +
+                $"разброс урона - {unit.Damage.Item1()}-{unit.Damage.Item2()}, инициатива - {unit.Initiative}, способности: {String.Join(", ", unit.SelfAbilities)}\n\n\n\n");
         }
 
         private void CreateStack()
         {
-            Console.WriteLine("Введите название стека");
+            Console.WriteLine("\nВведите название стека");
             var r = Console.ReadLine();
             if (r == null || stacks.ContainsKey(r))
             {
@@ -313,7 +311,7 @@ namespace GameWithConsoleInterface
                 return;
             }
 
-            Console.WriteLine("Введите тип юнита");
+            Console.WriteLine("\nВведите тип юнита");
             var t = Console.ReadLine();
             success = Enum.TryParse<Units>(t, out var type);
             if (!success || !Enum.IsDefined(typeof(Units), type))
@@ -325,7 +323,7 @@ namespace GameWithConsoleInterface
             success = false;
             while (!success)
             {
-                Console.WriteLine("Введите количество юнитов");
+                Console.WriteLine("\nВведите количество юнитов");
                 t = Console.ReadLine();
                 success = Int32.TryParse(t, out var count);
                 if (!success || count <= 0 || count >= 1000000)
@@ -345,7 +343,6 @@ namespace GameWithConsoleInterface
             foreach (var stack in stacks.Values)
             {
                 PrintCenter("СТЕК " + stack.Name);
-                Console.WriteLine();
                 PrintStack(stack);
                 Console.WriteLine("\n\n");
             }
@@ -355,21 +352,17 @@ namespace GameWithConsoleInterface
 
         private void PrintStack(BattleUnitsStack stack)
         {
-            Console.Write(
-                $"Юнит - {stack.Unit.Id}, количество - {stack.CurrentCount}, здоровье последнего - {stack.CurrentHealth}, инициатива - {stack.Initiative}, временные моды: ");
-            foreach (var mod in stack.Mods)
-                Console.Write(mod.Key + " (осталось: {0})    ", mod.Value == -1 ? "бесконечно" : mod.Value.ToString());
-            Console.WriteLine();
+            Console.WriteLine(
+                $"\nЮнит - {stack.Unit.Id}, количество - {stack.CurrentCount}, здоровье последнего - {stack.CurrentHealth}, инициатива - {stack.Initiative}, временные моды: {String.Join(", ", stack.Mods.Select(mod => String.Format($"{mod.Key} (осталось: {(mod.Value == -1 ? "бесконечно" : mod.Value.ToString())})")))}");
         }
 
         private void PrintArmys()
         {
             Console.WriteLine();
-            foreach (var i in armys)
+            foreach (var army in armys.Values)
             {
-                PrintCenter("АРМИЯ " + i.Key);
-                Console.WriteLine();
-                PrintArmy(i.Value);
+                PrintCenter("АРМИЯ " + army.Name);
+                PrintArmy(army);
                 Console.WriteLine("\n\n");
             }
 
@@ -379,10 +372,11 @@ namespace GameWithConsoleInterface
         private void PrintArmy(Army army)
         {
             var s = 0;
-            foreach (var stack in army.Stacks.Values)
-                Console.WriteLine(
-                    $"{++s}) Стек {stack.Name}, юнит - {stack.Unit.Id}, количество - {stack.CurrentCount}, здоровье последнего - {stack.CurrentHealth}, " +
-                    $"инициатива - {stack.Initiative}");
+            Console.WriteLine(String.Join("\n",
+                army.Stacks.Select(stack =>
+                    String.Format(
+                        $"\n{++s}) Стек {stack.Name}, юнит - {stack.Unit.Id}, количество - {stack.CurrentCount}, здоровье последнего - {stack.CurrentHealth}, " +
+                        $"инициатива - {stack.Initiative}"))));
         }
 
         private void PrintInitiative1(Scale scale)
@@ -397,7 +391,7 @@ namespace GameWithConsoleInterface
 
         private void AddStackToArmy()
         {
-            Console.WriteLine("Введите название армии");
+            Console.WriteLine("\nВведите название армии");
             var t = Console.ReadLine();
             if (t == null || !armys.ContainsKey(t))
             {
@@ -405,7 +399,7 @@ namespace GameWithConsoleInterface
                 return;
             }
 
-            Console.WriteLine("Введите название стека");
+            Console.WriteLine("\nВведите название стека");
             var r = Console.ReadLine();
             if (r == null || !stacks.ContainsKey(r))
             {
@@ -424,7 +418,7 @@ namespace GameWithConsoleInterface
 
         private void DeleteStackFromArmy()
         {
-            Console.WriteLine("Введите название армии");
+            Console.WriteLine("\nВведите название армии");
             var t = Console.ReadLine();
             if (t == null || !armys.ContainsKey(t))
             {
@@ -432,7 +426,6 @@ namespace GameWithConsoleInterface
                 return;
             }
 
-            Console.WriteLine();
             PrintArmy(armys[t]);
             Console.WriteLine("\nВведите название стека");
             var r = Console.ReadLine();
@@ -442,21 +435,15 @@ namespace GameWithConsoleInterface
         private void PrintAbilities()
         {
             PrintCenter("СПОСОБНОСТИ");
-            Console.WriteLine();
-            var lst = Enum.GetValues(typeof(Abilities));
-            foreach (var i in lst)
-                Console.WriteLine(i + " - " + GetDescription(i) + " (" + (BattleUnitsStack.GetIsActive(i) ? "активная" : "пассивная") + ")");
-            Console.WriteLine("\n" + new String('=', Console.WindowWidth) + "\n\n");
+            Console.WriteLine(
+                $"\n{String.Join("\n", Enum.GetValues(typeof(Abilities)).OfType<Abilities>().Select(ability => String.Format($"{ability} - {GetDescription(ability)} ({(BattleUnitsStack.GetIsActive(ability) ? "активная" : "пассивная")})")))}\n\n{new String('=', Console.WindowWidth)}\n\n");
         }
 
         private void PrintTempMods()
         {
             PrintCenter("МОДИФИКАТОРЫ");
-            Console.WriteLine();
-            var lst = Enum.GetValues(typeof(TempMods));
-            foreach (var i in lst)
-                Console.WriteLine(i + " - " + GetDescription(i));
-            Console.WriteLine("\n" + new String('=', Console.WindowWidth) + "\n\n");
+            Console.WriteLine(
+                $"\n{String.Join("\n", Enum.GetValues(typeof(TempMods)).OfType<TempMods>().Select(mod => String.Format($"{mod} - {GetDescription(mod)}")))}\n\n{new String('=', Console.WindowWidth)}\n\n");
         }
 
 //        private void ChangeInitiative()
@@ -495,7 +482,7 @@ namespace GameWithConsoleInterface
 
             if (t == attacker.Name)
             {
-                Console.WriteLine("Два одинаковых стека");
+                Console.WriteLine("\nДва одинаковых стека");
                 return false;
             }
 
@@ -520,10 +507,7 @@ namespace GameWithConsoleInterface
 
         private bool Cast(BattleUnitsStack caster)
         {
-            var abilities = new List<Abilities>();
-            foreach (var ab in caster.Unit.SelfAbilities)
-                if (BattleUnitsStack.GetIsActive(ab))
-                    abilities.Add(ab);
+            var abilities = caster.Unit.SelfAbilities.Where(ab => BattleUnitsStack.GetIsActive(ab)).ToList();
 
             if (abilities.Count == 0)
             {
@@ -532,8 +516,7 @@ namespace GameWithConsoleInterface
             }
 
             Console.Write("Выберите способность\n\nСпособности: ");
-            foreach (var ab in abilities)
-                Console.Write($"{ab} ");
+            Console.WriteLine(String.Join(", ", abilities));
             Console.WriteLine();
             var t = Console.ReadLine();
             success = Enum.TryParse<Abilities>(t, out var ability);
@@ -567,17 +550,16 @@ namespace GameWithConsoleInterface
         {
             var n = Console.WindowWidth - s.Length;
             var l = Convert.ToInt32(n / 2);
-            Console.Write((new String(c, l)) + s + new String(c, n - l));
+            Console.Write(new String(c, l) + s + new String(c, n - l));
         }
 
         private void IsWinner()
         {
-            if (GetAliveArmy(out var winner) == 1)
-            {
-                Console.WriteLine($"\nПОБЕДИЛ ИГРОК {winner}");
-                Console.ReadLine();
-                Environment.Exit(0);
-            }
+            if (GetAliveArmy(out var winner) != 1)
+                return;
+            Console.WriteLine($"\nПОБЕДИЛ ИГРОК {winner}");
+            Console.ReadLine();
+            Environment.Exit(0);
         }
 
         private static string GetDescription(object enumValue)
@@ -593,22 +575,18 @@ namespace GameWithConsoleInterface
         {
             var c = 0;
             a = null;
-            foreach (var army in armys.Values)
-                if (army.IsAlive())
-                {
-                    a = army.Name;
-                    c++;
-                }
+            foreach (var army in armys.Values.Where(army => army.IsAlive()))
+            {
+                a = army.Name;
+                c++;
+            }
 
             return c;
         }
 
         private static bool IsTurn()
         {
-            foreach (var stack in stacks.Values)
-                if (stack.CanTurn && stack.IsAlive() && stack.Army != null)
-                    return true;
-            return false;
+            return stacks.Values.Any(stack => stack.CanTurn && stack.IsAlive() && stack.Army != null);
         }
 
         private static void NextRound()

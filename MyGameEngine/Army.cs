@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using Newtonsoft.Json;
 
@@ -11,8 +12,8 @@ namespace MyGameEngine
         private int Count => stacks.Count;
         public string Name { get; }
         private readonly Dictionary<string, BattleUnitsStack> stacks;
-        
-        public Dictionary<string, BattleUnitsStack> Stacks => new Dictionary<string, BattleUnitsStack>(stacks);
+
+        public IEnumerable<BattleUnitsStack> Stacks => new List<BattleUnitsStack>(stacks.Values);
 
         public Army(string name)
         {
@@ -45,18 +46,12 @@ namespace MyGameEngine
 
         public bool IsAlive()
         {
-            foreach (var stack in stacks.Values)
-                if (stack.IsAlive())
-                    return true;
-            return false;
+            return stacks.Values.Any(stack => stack.IsAlive());
         }
 
         public bool CanTurn()
         {
-            foreach (var stack in stacks)
-                if (stack.Value.CanTurn)
-                    return true;
-            return false;
+            return stacks.Values.Any(stack => stack.CanTurn);
         }
     }
 }

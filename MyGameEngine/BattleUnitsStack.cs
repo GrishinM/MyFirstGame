@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using Newtonsoft.Json;
 
 namespace MyGameEngine
 {
@@ -98,7 +97,7 @@ namespace MyGameEngine
 
         public BattleUnitsStack(Unit unit, int count, string name) : base(unit, count, name)
         {
-            mods=new SortedDictionary<TempMods, int>();
+            mods = new SortedDictionary<TempMods, int>();
             CurrentHealth = unit.Hitpoints;
             CurrentCount = count;
             CanCounterAttack = true;
@@ -119,7 +118,7 @@ namespace MyGameEngine
 
         public (int, int) Fight(BattleUnitsStack enemy, bool isCounter = false)
         {
-            var message = (-1, -1);
+            var result = (-1, -1);
             if (!IsAlive() && !isCounter)
                 throw new MyException("Атакующий стек мертв");
 
@@ -138,10 +137,8 @@ namespace MyGameEngine
             var lst = new List<(TempMods, int)>();
             if (enemy.mods.ContainsKey(TempMods.Breaked))
             {
-                foreach (var mod in enemy.Mods)
+                foreach (var mod in enemy.Mods.Where(mod => GetIsPositive(mod.Key)))
                 {
-                    if (!GetIsPositive(mod.Key))
-                        continue;
                     lst.Add((mod.Key, mod.Value));
                     enemy.mods.Remove(mod.Key);
                 }
@@ -149,26 +146,26 @@ namespace MyGameEngine
 
             var enemyDefence = enemy.Defence;
             var selfAttack = Attack;
-            var selfDamge = new Dmg(Damage);
+            var selfDamage = new Dmg(Damage);
 
             if (Unit.HasAbility(Abilities.Dark) && enemy.Unit.HasAbility(Abilities.Light) ||
                 Unit.HasAbility(Abilities.Light) && enemy.Unit.HasAbility(Abilities.Dark))
-                selfDamge.Mul(1.2);
+                selfDamage.Mul(1.2);
 
             if (Unit.HasAbility(Abilities.Headshot) && enemy.Unit.Type != Types.Building)
             {
                 if (rand.Next(0, 100) < 40)
-                    selfDamge.Add(100);
+                    selfDamage.Add(100);
             }
 
             if (Unit.HasAbility(Abilities.FireDamage) && enemy.Unit.HasAbility(Abilities.ImmuneToFire))
-                selfDamge.Mul(0.5);
+                selfDamage.Mul(0.5);
 
             if (Unit.HasAbility(Abilities.FireDamage) && enemy.Unit.Type == Types.Building)
-                selfDamge.Mul(0);
+                selfDamage.Mul(0);
 
-            var dm = rand.Next(selfDamge.Item1(), selfDamge.Item2() + 1);
-            var dmg = Convert.ToInt32((selfAttack > enemyDefence)
+            var dm = rand.Next(selfDamage.Item1(), selfDamage.Item2() + 1);
+            var dmg = Convert.ToInt32(selfAttack > enemyDefence
                 ? CurrentCount * dm * (1 + 0.05 * (selfAttack - enemyDefence))
                 : CurrentCount * dm / (1 + 0.05 * (enemyDefence - selfAttack)));
 
@@ -193,12 +190,12 @@ namespace MyGameEngine
                 enemy.CurrentHealth = enemy.mods.ContainsKey(TempMods.Immortal) ? 1 : 0;
             }
 
-//            message = string.Format("\n{6}:\nСтек {0} нанес стеку {1} {2} единиц урона\nСтек {3}: количество - {4}, здоровье последнего - {5}", Name, enemy.Name, dmg, enemy.Name,
+//            result = string.Format("\n{6}:\nСтек {0} нанес стеку {1} {2} единиц урона\nСтек {3}: количество - {4}, здоровье последнего - {5}", Name, enemy.Name, dmg, enemy.Name,
 //                enemy.CurrentCount, enemy.CurrentHealth, isCounter ? "Контратака" : "Результат");
-            message.Item1 = dmg;
+            result.Item1 = dmg;
             if (!isCounter && enemy.CanCounterAttack)
             {
-                message.Item2 = (enemy.Fight(this, true)).Item1;
+                result.Item2 = (enemy.Fight(this, true)).Item1;
                 enemy.CanCounterAttack = false;
             }
 
@@ -207,7 +204,7 @@ namespace MyGameEngine
             if (!isCounter)
                 CanTurn = false;
 
-            return message;
+            return result;
         }
 
         public void Cast(Abilities ability, BattleUnitsStack target)
@@ -248,9 +245,8 @@ namespace MyGameEngine
                     target.AddMod(TempMods.SuperDefence, 1);
                     break;
                 case Abilities.Heavenly_Grace:
-                    foreach (var mod in target.Mods.Keys)
-                        if (GetIsPositive(mod))
-                            target.mods.Remove(mod);
+                    foreach (var mod in target.Mods.Keys.Where(mod => GetIsPositive(mod)))
+                        target.mods.Remove(mod);
                     break;
                 case Abilities.Haste:
                     target.AddMod(TempMods.Hasted, 1);

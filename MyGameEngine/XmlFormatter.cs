@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Xml.Linq;
 
 namespace MyGameEngine
@@ -16,7 +15,7 @@ namespace MyGameEngine
                 var army_node = new XElement("Army");
                 army_node.Add(new XAttribute("name", army.Name));
                 var stacks_node = new XElement("BattleUnitsStacks");
-                foreach (var stack in army.Stacks.Values)
+                foreach (var stack in army.Stacks)
                 {
                     var stack_node = new XElement("BattleUnitsStack");
                     stack_node.Add(new XAttribute("name", stack.Name));

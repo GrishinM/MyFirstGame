@@ -1,6 +1,8 @@
-﻿namespace MyGameEngine
+﻿using System;
+
+namespace MyGameEngine
 {
-    public class Attr : System.Attribute
+    public class Attr : Attribute
     {
         public string Description { get; }
 
