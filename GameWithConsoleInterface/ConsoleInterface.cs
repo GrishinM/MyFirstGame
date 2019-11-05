@@ -35,7 +35,7 @@ namespace GameWithConsoleInterface
 
         public ConsoleInterface()
         {
-            var con = new SQLiteConnection("Data Source=Units.db;Version=3;");
+            var con = new SQLiteConnection(@"Data Source=C:\2kurs1sem\OOP\Units.db;Version=3;");
             con.Open();
             var cmd = new SQLiteCommand {Connection = con, CommandText = $"select * from Units"};
             var reader = cmd.ExecuteReader();
