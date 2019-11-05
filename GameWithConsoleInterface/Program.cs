@@ -1,10 +1,8 @@
-﻿using System;
-
-namespace GameWithConsoleInterface
+﻿namespace GameWithConsoleInterface
 {
-    class Program
+    internal static class Program
     {
-        static void Main(string[] args)
+        private static void Main(string[] args)
         {
             var game = new ConsoleInterface();
             game.Start();

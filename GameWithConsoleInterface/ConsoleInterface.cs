@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data.SqlClient;
+using System.Data.SQLite;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -12,12 +14,7 @@ namespace GameWithConsoleInterface
     {
         private static SortedDictionary<string, Army> armys = new SortedDictionary<string, Army>();
         private static SortedDictionary<string, BattleUnitsStack> stacks = new SortedDictionary<string, BattleUnitsStack>();
-
-        private static readonly Unit[] units =
-        {
-            new Abaddon(), new Axe(), new Dark_Seer(), new Doom(), new Drow_Ranger(), new Huskar(), new Juggernaut(), new Keeper_of_the_Light(), new Lich(),
-            new Line_meleee_creep(), new Omniknight(), new Sniper(), new Sven(), new Tower()
-        };
+        private static List<Unit> units = new List<Unit>();
 
         private BattleUnitsStack playerStack;
 
@@ -35,6 +32,45 @@ namespace GameWithConsoleInterface
 //        private int player;
         private Scale curScale;
         private Scale nextScale;
+
+        public ConsoleInterface()
+        {
+            var con = new SQLiteConnection("Data Source=Units.db;Version=3;");
+            con.Open();
+            var cmd = new SQLiteCommand {Connection = con, CommandText = $"select * from Units"};
+            var reader = cmd.ExecuteReader();
+            while (reader.Read())
+            {
+                success = Enum.TryParse<Units>(reader["Id"].ToString(), out var id);
+                if (!success || !Enum.IsDefined(typeof(Units), id))
+                {
+                    throw new MyException("Ошибка в БД");
+                }
+
+                success = Enum.TryParse<Types>(reader["Type"].ToString(), out var type);
+                if (!success || !Enum.IsDefined(typeof(Types), type))
+                {
+                    throw new MyException("Ошибка в БД");
+                }
+
+                var abs = new HashSet<Abilities>();
+                for (var i = 0; i < 4; i++)
+                {
+                    if (reader["Ability_" + i].ToString() == "")
+                        continue;
+                    success = Enum.TryParse<Abilities>(reader["Ability_" + i].ToString(), out var ab);
+                    if (!success || !Enum.IsDefined(typeof(Abilities), ab))
+                    {
+                        throw new MyException("Ошибка в БД");
+                    }
+
+                    abs.Add(ab);
+                }
+
+                units.Add(new Unit(id, reader["Name"].ToString(), type, Convert.ToInt32(reader["Hitpoints"]), Convert.ToInt32(reader["Attack"]), Convert.ToInt32(reader["Defence"]),
+                    (Convert.ToInt32(reader["MinDamage"]), Convert.ToInt32(reader["MaxDamage"])), Convert.ToSingle(reader["Initiative"]), abs));
+            }
+        }
 
         public void Start()
         {

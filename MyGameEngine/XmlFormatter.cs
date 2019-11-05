@@ -44,7 +44,7 @@ namespace MyGameEngine
             doc.Save(file + ".xml");
         }
 
-        public static (SortedDictionary<string, Army>, SortedDictionary<string, BattleUnitsStack>) Load(string file, Unit[] units)
+        public static (SortedDictionary<string, Army>, SortedDictionary<string, BattleUnitsStack>) Load(string file, List<Unit> units)
         {
             var doc = XDocument.Load(file + ".xml");
             var armys = new SortedDictionary<string, Army>();

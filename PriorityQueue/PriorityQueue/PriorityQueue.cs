@@ -20,7 +20,9 @@ namespace PriorityQueue
             k.Reverse();
             foreach (var q in k)
                 if (q.Count > 0)
+                {
                     return q.Dequeue();
+                }
             return null;
         }
 

@@ -1,6 +1,6 @@
-﻿﻿using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
- namespace MyGameEngine
+namespace MyGameEngine
 {
     public class Unit
     {
@@ -17,7 +17,7 @@
         public Dmg Damage { get; }
         public float Initiative { get; }
 
-        protected Unit(Units id, string name, Types type, int hitpoints, int attack, int defence, (int, int) damage, float initiative, HashSet<Abilities> abilitieses)
+        public Unit(Units id, string name, Types type, int hitpoints, int attack, int defence, (int, int) damage, float initiative, HashSet<Abilities> abilitieses)
         {
             Id = id;
             Name = name;
