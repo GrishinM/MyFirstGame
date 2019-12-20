@@ -1,15 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
+﻿using System.Collections.Generic;
 using System.Linq;
-using Newtonsoft.Json;
 
 
 namespace MyGameEngine
 {
     public class Army
     {
-        private int Count => stacks.Count;
+        public int Count => stacks.Count;
         public string Name { get; }
         private readonly Dictionary<string, BattleUnitsStack> stacks;
 
@@ -26,13 +23,20 @@ namespace MyGameEngine
             this.stacks = stacks;
         }
 
-        public bool Add(BattleUnitsStack stack)
+        public void Add(BattleUnitsStack stack)
         {
-            if (Count > 5)
-                return false;
+            if (Count == 6)
+            {
+                throw new MyException("Превышено максимальное количество стеков");
+            }
+
+            if (stacks.ContainsKey(stack.Name))
+            {
+                throw new MyException("В этой армии уже есть стек с таким названием");
+            }
+
             stacks.Add(stack.Name, stack);
             stack.Army = this;
-            return true;
         }
 
         public bool Remove(string name)

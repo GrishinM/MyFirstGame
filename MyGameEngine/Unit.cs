@@ -4,11 +4,11 @@ namespace MyGameEngine
 {
     public class Unit
     {
-        private readonly HashSet<Abilities> abilitieses;
+        private readonly HashSet<Abilities> abilities;
 
-        public IEnumerable<Abilities> SelfAbilities => new HashSet<Abilities>(abilitieses);
+        public IEnumerable<Abilities> Abilities => new HashSet<Abilities>(abilities);
 
-        public Units Id { get; }
+        public string Id { get; }
         public string Name { get; }
         public Types Type { get; }
         public int Hitpoints { get; }
@@ -17,7 +17,7 @@ namespace MyGameEngine
         public Dmg Damage { get; }
         public float Initiative { get; }
 
-        public Unit(Units id, string name, Types type, int hitpoints, int attack, int defence, (int, int) damage, float initiative, HashSet<Abilities> abilitieses)
+        public Unit(string id, string name, Types type, int hitpoints, int attack, int defence, (int, int) damage, float initiative, HashSet<Abilities> abilities)
         {
             Id = id;
             Name = name;
@@ -27,12 +27,12 @@ namespace MyGameEngine
             Defence = defence;
             Damage = new Dmg(damage);
             Initiative = initiative;
-            this.abilitieses = abilitieses;
+            this.abilities = abilities;
         }
 
         public bool HasAbility(Abilities x)
         {
-            return abilitieses.Contains(x);
+            return abilities.Contains(x);
         }
     }
 }

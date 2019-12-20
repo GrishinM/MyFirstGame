@@ -6,20 +6,20 @@ namespace MyGameEngine
 {
     public class Scale
     {
-        private PriorityQueue<BattleUnitsStack> Stacks { get; }
+        private readonly PriorityQueue<BattleUnitsStack> stacks;
 
         public Scale(IEnumerable<BattleUnitsStack> stacks)
         {
-            Stacks = new PriorityQueue<BattleUnitsStack>();
+            this.stacks = new PriorityQueue<BattleUnitsStack>();
             foreach (var stack in stacks.Where(stack => stack.CanTurn && stack.IsAlive() && stack.Army != null))
             {
-                Stacks.Add(stack.Initiative, stack);
+                this.stacks.Add(stack.Initiative, stack);
             }
         }
 
         public BattleUnitsStack GetStack()
         {
-            return Stacks.Get();
+            return stacks.Get();
         }
 
         public void ch(BattleUnitsStack stack)
@@ -30,12 +30,9 @@ namespace MyGameEngine
             }
 
             stack.Initiative = -stack.Unit.Initiative;
-            Stacks.Add(stack.Initiative, stack);
+            stacks.Add(stack.Initiative, stack);
         }
 
-        public IEnumerable<BattleUnitsStack> Values()
-        {
-            return Stacks.Values();
-        }
+        public IEnumerable<BattleUnitsStack> Stacks => stacks.Values();
     }
 }

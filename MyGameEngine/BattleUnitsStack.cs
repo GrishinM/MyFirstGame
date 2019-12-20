@@ -164,7 +164,7 @@ namespace MyGameEngine
             if (Unit.HasAbility(Abilities.FireDamage) && enemy.Unit.Type == Types.Building)
                 selfDamage.Mul(0);
 
-            var dm = rand.Next(selfDamage.Item1(), selfDamage.Item2() + 1);
+            var dm = rand.Next(selfDamage.Min, selfDamage.Max + 1);
             var dmg = Convert.ToInt32(selfAttack > enemyDefence
                 ? CurrentCount * dm * (1 + 0.05 * (selfAttack - enemyDefence))
                 : CurrentCount * dm / (1 + 0.05 * (enemyDefence - selfAttack)));
@@ -245,7 +245,7 @@ namespace MyGameEngine
                     target.AddMod(TempMods.SuperDefence, 1);
                     break;
                 case Abilities.Heavenly_Grace:
-                    foreach (var mod in target.Mods.Keys.Where(mod => GetIsPositive(mod)))
+                    foreach (var mod in target.Mods.Keys.Where(mod => !GetIsPositive(mod)))
                         target.mods.Remove(mod);
                     break;
                 case Abilities.Haste:

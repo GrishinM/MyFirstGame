@@ -1,0 +1,293 @@
+﻿<Window x:Class="GameWithGraphicInterface.Views.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:GameWithGraphicInterface"
+        mc:Ignorable="d"
+        Title="Dota 3" Height="450" Width="800" WindowState="Maximized" WindowStyle="None" Icon="../Resources/game-icon.bmp">
+    <Window.Resources>
+        <Style x:Key="PlusButton" TargetType="{x:Type Button}">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type Button}">
+                        <Viewbox Width="{TemplateBinding Width}" Height="{TemplateBinding Height}">
+                            <Path Fill="Green">
+                                <Path.Data>
+                                    <PathGeometry>
+                                        <PathFigure IsClosed="True" StartPoint="0,40">
+                                            <LineSegment Point="40,40" />
+                                            <LineSegment Point="40,0" />
+                                            <LineSegment Point="60,0" />
+                                            <LineSegment Point="60,40" />
+                                            <LineSegment Point="100,40" />
+                                            <LineSegment Point="100,60" />
+                                            <LineSegment Point="60,60" />
+                                            <LineSegment Point="60,100" />
+                                            <LineSegment Point="40,100" />
+                                            <LineSegment Point="40,60" />
+                                            <LineSegment Point="0,60" />
+                                        </PathFigure>
+                                    </PathGeometry>
+                                </Path.Data>
+                            </Path>
+                        </Viewbox>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Grid>
+        <Grid Name="MainMenuGrid" VerticalAlignment="Center" HorizontalAlignment="Center">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <Button Margin="30" FontSize="40" Content="Новая игра" Click="NewGame" Command="{Binding NewGameCommand}" />
+            <Button Margin="30" FontSize="40" Grid.Row="1" Content="Загрузить игру" Click="ShowLoadGameDialog" />
+            <Button Margin="30" FontSize="40" Grid.Row="2" Content="Выход" Click="ExitGame" />
+        </Grid>
+
+        <Grid Name="MainGrid" Visibility="Hidden">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition />
+            </Grid.RowDefinitions>
+
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition />
+                    <ColumnDefinition />
+                    <ColumnDefinition />
+                    <ColumnDefinition />
+                </Grid.ColumnDefinitions>
+
+                <Button Margin="50" FontSize="40" Content="Юниты" Click="ShowUnits" />
+                <Button Margin="50" FontSize="40" Grid.Column="1" Content="Начать сражение" Click="Fight" Foreground="Red" FontWeight="Bold" />
+                <Button Margin="50" FontSize="40" Grid.Column="2" Content="Сохранить игру" Click="ShowSaveGameDialog" />
+                <Button Margin="50" FontSize="40" Grid.Column="3" Content="Закончить игру" Click="EndGame" />
+            </Grid>
+
+            <Grid Grid.Row="1">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition />
+                </Grid.RowDefinitions>
+
+                <TextBlock Text="Шкала инициативы" FontSize="30" Margin="5" HorizontalAlignment="Center" />
+                <Border Grid.Row="1" BorderBrush="Black" BorderThickness="1" Margin="0,5,0,10">
+                    <StackPanel Orientation="Horizontal">
+                        <!-- <TextBlock VerticalAlignment="Center" DataContext="{Binding SelectedStack}" FontSize="17" FontWeight="Bold"> -->
+                        <!--     <TextBlock.Text> -->
+                        <!--         <MultiBinding StringFormat=" {0} ({1})"> -->
+                        <!--             <Binding Path="Name" /> -->
+                        <!--             <Binding Path="Initiative" /> -->
+                        <!--         </MultiBinding> -->
+                        <!--     </TextBlock.Text> -->
+                        <!-- </TextBlock> -->
+                        <Border DataContext="{Binding SelectedStack}" CornerRadius="25" Width="50" Height="50" Margin="5" Background="White" BorderBrush="Black" BorderThickness="3">
+                            <TextBlock FontSize="17" HorizontalAlignment="Center" VerticalAlignment="Center" Text="{Binding StringFormat=\{0\}, Path=Name}"></TextBlock>
+                        </Border>
+                        <ItemsControl ItemsSource="{Binding CurScale}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel Orientation="Horizontal" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock VerticalAlignment="Center" FontSize="15">
+                                        <TextBlock.Text>
+                                            <MultiBinding StringFormat="-> {0} ({1})">
+                                                <Binding Path="Name" />
+                                                <Binding Path="Initiative" />
+                                            </MultiBinding>
+                                        </TextBlock.Text>
+                                    </TextBlock>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+            </Grid>
+
+            <ScrollViewer Margin="0,100,0,0" Background="White" Grid.Row="2" HorizontalScrollBarVisibility="Visible" VerticalScrollBarVisibility="Disabled">
+                <StackPanel Orientation="Horizontal">
+                    <ItemsControl ItemsSource="{Binding Armys}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Orientation="Horizontal" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Margin="0,0,10,0" BorderThickness="1" BorderBrush="Black">
+                                    <StackPanel Width="150">
+                                        <TextBlock HorizontalAlignment="Stretch" VerticalAlignment="Center" Text="{Binding Army.Name}" TextAlignment="Center" />
+                                        <ItemsControl Name="StacksControl" ItemsSource="{Binding Stacks}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <StackPanel Margin="0,5,0,5" Background="Red">
+                                                        <TextBlock HorizontalAlignment="Center" Margin="5" Text="{Binding Name}" />
+                                                        <TextBlock HorizontalAlignment="Center" Margin="5" Text="{Binding Unit.Id}" />
+                                                        <Button Name="DeleteStackButton" Width="30"
+                                                                Command="{Binding ElementName=StacksControl, Path=DataContext.RemoveStackCommand}" CommandParameter="{Binding }"
+                                                                Content="-" Click="DeleteStackButton_OnClick" />
+                                                    </StackPanel>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                        <Button Click="ShowAddStackDialog" Width="50" Height="50" HorizontalAlignment="Center" Margin="10" CommandParameter="{Binding }"
+                                                Style="{StaticResource PlusButton}">
+                                            <Button.ToolTip>
+                                                <ToolTip>
+                                                    <TextBlock Text="Добавить стек" />
+                                                </ToolTip>
+                                            </Button.ToolTip>
+                                        </Button>
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <Button Click="ShowAddArmyDialog" Width="100" Height="100" VerticalAlignment="Center" Margin="20" Style="{StaticResource PlusButton}">
+                        <Button.ToolTip>
+                            <ToolTip>
+                                <TextBlock Text="Добавить армию" />
+                            </ToolTip>
+                        </Button.ToolTip>
+                    </Button>
+                </StackPanel>
+            </ScrollViewer>
+        </Grid>
+
+        <Border Name="AddArmyDialog" Visibility="Hidden" VerticalAlignment="Center" HorizontalAlignment="Center" Background="White" BorderBrush="Black" BorderThickness="1">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <StackPanel>
+                    <TextBlock Margin="10" Text="Введите название армии" />
+                    <TextBox Margin="10" MinWidth="30" MaxWidth="100" HorizontalAlignment="Center" Name="ArmyNameBox" />
+                </StackPanel>
+                <Button Margin="10" HorizontalAlignment="Left" Grid.Row="1" Content="Отмена" Click="HideAddArmyDialog" IsCancel="True" />
+                <Button Name="AddArmyButton" Margin="10" HorizontalAlignment="Right" Grid.Row="1" Content="ОК" Click="HideAddArmyDialog" IsDefault="True"
+                        Command="{Binding AddArmyCommand}" />
+            </Grid>
+        </Border>
+
+        <Border Name="AddStackDialog" Visibility="Hidden" VerticalAlignment="Center" HorizontalAlignment="Center" Background="White" BorderBrush="Black" BorderThickness="1">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <StackPanel HorizontalAlignment="Left">
+                    <TextBlock Margin="10" Text="Введите название стека" />
+                    <TextBox Margin="10" MinWidth="30" MaxWidth="100" HorizontalAlignment="Center" Name="StackNameBox" />
+                </StackPanel>
+                <StackPanel HorizontalAlignment="Right" Grid.Row="0">
+                    <TextBlock Margin="10" Text="Введите количество юнитов" />
+                    <TextBox Margin="10" MinWidth="30" MaxWidth="100" HorizontalAlignment="Center" Name="StackCountBox" />
+                </StackPanel>
+                <StackPanel Grid.Row="1">
+                    <TextBlock HorizontalAlignment="Center" Margin="10" Text="Выберите тип юнита" />
+                    <ListBox Name="UnitsList" Margin="10" ItemsSource="{Binding Units}" SelectedIndex="0">
+                        <ListBox.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel ItemWidth="100" Width="300" />
+                            </ItemsPanelTemplate>
+                        </ListBox.ItemsPanel>
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock TextAlignment="Center" Width="100" Text="{Binding Id}" />
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </StackPanel>
+                <Button Margin="10" HorizontalAlignment="Left" Content="Отмена" IsCancel="True" Grid.Row="2" Click="HideAddStackDialog" />
+                <Button Margin="10" Name="AddStackButton" HorizontalAlignment="Right" Content="ОК" IsDefault="True" Click="HideAddStackDialog" Grid.Row="2"
+                        Command="{Binding AddStackCommand}" />
+            </Grid>
+        </Border>
+
+        <Grid Name="UnitsGrid" Visibility="Hidden">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition />
+            </Grid.RowDefinitions>
+
+            <Button Content="Назад" VerticalAlignment="Top" HorizontalAlignment="Left" Click="HideUnits" IsCancel="True" Padding="5" />
+            <ItemsControl HorizontalAlignment="Center" VerticalAlignment="Center" Grid.Row="1" ItemsSource="{Binding Units}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <TextBlock ToolTipService.ShowDuration="1000000" Margin="10" Text="{Binding Id}">
+                            <TextBlock.ToolTip>
+                                <ToolTip>
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding StringFormat=Имя: {0}, Path=Name}" />
+                                        <TextBlock Text="{Binding StringFormat=Тип: {0}, Path=Type}" />
+                                        <TextBlock Text="{Binding StringFormat=Здоровье: {0}, Path=Hitpoints}" />
+                                        <TextBlock Text="{Binding StringFormat=Атака: {0}, Path=Attack}" />
+                                        <TextBlock Text="{Binding StringFormat=Защита: {0}, Path=Defence}" />
+                                        <TextBlock>
+                                            <TextBlock.Text>
+                                                <MultiBinding StringFormat="Урон: {0} - {1}">
+                                                    <Binding Path="Damage.Min" />
+                                                    <Binding Path="Damage.Max" />
+                                                </MultiBinding>
+                                            </TextBlock.Text>
+                                        </TextBlock>
+                                        <TextBlock Text="{Binding StringFormat=Инициатива: {0}, Path=Initiative}" />
+                                    </StackPanel>
+                                </ToolTip>
+                            </TextBlock.ToolTip>
+                        </TextBlock>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </Grid>
+
+        <Grid Name="LoadGameDialog" Visibility="Hidden" VerticalAlignment="Center" HorizontalAlignment="Center" MinWidth="200">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <ListBox Margin="10" Name="FilesBox" SelectedIndex="0" FontSize="16" />
+            <Button FontSize="12" Width="50" Margin="10" HorizontalAlignment="Left" Content="Назад" IsCancel="True" Grid.Row="1" Click="HideLoadGameDialog" />
+            <Button FontSize="12" Width="50" Margin="10" HorizontalAlignment="Center" Content="Удалить" Grid.Row="1" Click="DeleteFile" />
+            <Button FontSize="12" Width="50" Margin="10" HorizontalAlignment="Right" Content="ОК" IsDefault="True" Click="LoadGame" Grid.Row="1"
+                    Command="{Binding LoadGameCommand}" CommandParameter="{Binding ElementName=FilesBox, Path=SelectedItem}" />
+        </Grid>
+
+        <Border Name="SaveGameDialog" Visibility="Hidden" VerticalAlignment="Center" HorizontalAlignment="Center" Background="White" BorderBrush="Black" BorderThickness="1">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
+                <StackPanel>
+                    <TextBlock Margin="10" Text="Введите название игры" />
+                    <TextBox Margin="10" MinWidth="30" MaxWidth="100" HorizontalAlignment="Center" Name="GameNameBox" />
+                </StackPanel>
+                <Button Margin="10" HorizontalAlignment="Left" Grid.Row="1" Content="Отмена" Click="HideSaveGameDialog" IsCancel="True" />
+                <Button Margin="10" HorizontalAlignment="Right" Grid.Row="1" Content="ОК" Click="HideSaveGameDialog" IsDefault="True" Command="{Binding SaveGameCommand}"
+                        CommandParameter="{Binding ElementName=GameNameBox, Path=Text}" />
+            </Grid>
+        </Border>
+
+        <Grid Name="MainGame" Visibility="Hidden" />
+    </Grid>
+</Window>

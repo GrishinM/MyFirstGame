@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Data.SqlClient;
 using System.Data.SQLite;
 using System.IO;
 using System.Linq;
@@ -12,9 +11,9 @@ namespace GameWithConsoleInterface
 {
     internal class ConsoleInterface
     {
-        private static SortedDictionary<string, Army> armys = new SortedDictionary<string, Army>();
-        private static SortedDictionary<string, BattleUnitsStack> stacks = new SortedDictionary<string, BattleUnitsStack>();
-        private static List<Unit> units = new List<Unit>();
+        private static Dictionary<string, Army> armys = new Dictionary<string, Army>();
+        private static Dictionary<string, BattleUnitsStack> stacks = new Dictionary<string, BattleUnitsStack>();
+        private static Dictionary<String, Unit> units = new Dictionary<string, Unit>();
 
         private BattleUnitsStack playerStack;
 
@@ -32,50 +31,19 @@ namespace GameWithConsoleInterface
 //        private int player;
         private Scale curScale;
         private Scale nextScale;
+        private readonly XmlFormatter xml;
+        private const string directory = @"C:\2kurs1sem\OOP\Saves";
 
         public ConsoleInterface()
         {
-            var con = new SQLiteConnection(@"Data Source=C:\2kurs1sem\OOP\Units.db;Version=3;");
-            con.Open();
-            var cmd = new SQLiteCommand {Connection = con, CommandText = $"select * from Units"};
-            var reader = cmd.ExecuteReader();
-            while (reader.Read())
-            {
-                success = Enum.TryParse<Units>(reader["Id"].ToString(), out var id);
-                if (!success || !Enum.IsDefined(typeof(Units), id))
-                {
-                    throw new MyException("Ошибка в БД");
-                }
-
-                success = Enum.TryParse<Types>(reader["Type"].ToString(), out var type);
-                if (!success || !Enum.IsDefined(typeof(Types), type))
-                {
-                    throw new MyException("Ошибка в БД");
-                }
-
-                var abs = new HashSet<Abilities>();
-                for (var i = 0; i < 4; i++)
-                {
-                    if (reader["Ability_" + i].ToString() == "")
-                        continue;
-                    success = Enum.TryParse<Abilities>(reader["Ability_" + i].ToString(), out var ab);
-                    if (!success || !Enum.IsDefined(typeof(Abilities), ab))
-                    {
-                        throw new MyException("Ошибка в БД");
-                    }
-
-                    abs.Add(ab);
-                }
-
-                units.Add(new Unit(id, reader["Name"].ToString(), type, Convert.ToInt32(reader["Hitpoints"]), Convert.ToInt32(reader["Attack"]), Convert.ToInt32(reader["Defence"]),
-                    (Convert.ToInt32(reader["MinDamage"]), Convert.ToInt32(reader["MaxDamage"])), Convert.ToSingle(reader["Initiative"]), abs));
-            }
+            xml = new XmlFormatter();
+            units = Loader.GetUnits(@"C:\2kurs1sem\OOP", "Units.db");
         }
 
         public void Start()
         {
             var hConsole = DllImports.GetStdHandle(-11);
-            DllImports.SetConsoleDisplayMode(hConsole, 1, out var x);
+            DllImports.SetConsoleDisplayMode(hConsole, 1, out _);
             round = 0;
 //            delta = 0;
             players = 0;
@@ -129,22 +97,15 @@ namespace GameWithConsoleInterface
                 Start();
             }
 
-            (armys, stacks) = XmlFormatter.Load(a, units);
+            (armys, stacks) = xml.Open(directory, a, units);
             MainMenu();
         }
 
         private void SaveGame()
         {
-//            var json = JsonConvert.SerializeObject(armys.Values);
-//            var b=new JsonSerializer();
-//            var ar = JsonConvert.DeserializeObject(json) as JArray;
-//            //b.Serialize(new JsonTextWriter(), armys, typeof(Army));
-//            Console.WriteLine(ar.First);
-//            return;
-
             Console.WriteLine("\nВведите название файла");
             var a = Console.ReadLine();
-            XmlFormatter.Save(a, armys.Values);
+            xml.Save(directory, a, armys.Values);
             Console.WriteLine("\nИгра успешно сохранена");
             MainMenu();
         }
@@ -156,7 +117,7 @@ namespace GameWithConsoleInterface
             while (menu)
             {
                 Console.WriteLine("\n1 - вывести все юниты    2 - создать стек    3 - вывести все стеки    4 - вывести все армии    5 - добавить стек в армию    " +
-                                  "6 - удалить стек из армии    7 - список способностей    8 - список временных модификаторов    " + "9 - шкала инициативы    10 - начать    " +
+                                  "6 - удалить стек из армии    7 - список способностей    8 - список временных модификаторов    9 - шкала инициативы    10 - начать    " +
                                   "11 - сохранить игру    0 - выход");
                 var a = Console.ReadLine();
                 switch (a)
@@ -210,7 +171,7 @@ namespace GameWithConsoleInterface
                 }
             }
 
-            if (GetAliveArmy(out var z) == 0)
+            if (GetAliveArmy(out _) == 0)
             {
                 Console.WriteLine("\nНИЧЬЯ");
                 Console.ReadLine();
@@ -321,7 +282,7 @@ namespace GameWithConsoleInterface
         private void PrintUnits()
         {
             Console.WriteLine();
-            foreach (var unit in units)
+            foreach (var unit in units.Values)
             {
                 PrintCenter("ЮНИТ " + unit.Id);
                 PrintUnit(unit);
@@ -334,7 +295,7 @@ namespace GameWithConsoleInterface
         {
             Console.WriteLine(
                 $"\nИмя - {unit.Name}, тип - {unit.Type}, здоровье - {unit.Hitpoints}, атака - {unit.Attack}, защита - {unit.Defence}, " +
-                $"разброс урона - {unit.Damage.Item1()}-{unit.Damage.Item2()}, инициатива - {unit.Initiative}, способности: {String.Join(", ", unit.SelfAbilities)}\n\n\n\n");
+                $"разброс урона - {unit.Damage.Min}-{unit.Damage.Max}, инициатива - {unit.Initiative}, способности: {String.Join(", ", unit.Abilities)}\n\n\n\n");
         }
 
         private void CreateStack()
@@ -348,9 +309,8 @@ namespace GameWithConsoleInterface
             }
 
             Console.WriteLine("\nВведите тип юнита");
-            var t = Console.ReadLine();
-            success = Enum.TryParse<Units>(t, out var type);
-            if (!success || !Enum.IsDefined(typeof(Units), type))
+            var type = Console.ReadLine();
+            if (type==null || !units.ContainsKey(type))
             {
                 Console.WriteLine("\nЮнита с таким типом не существует");
                 return;
@@ -360,7 +320,7 @@ namespace GameWithConsoleInterface
             while (!success)
             {
                 Console.WriteLine("\nВведите количество юнитов");
-                t = Console.ReadLine();
+                var t = Console.ReadLine();
                 success = Int32.TryParse(t, out var count);
                 if (!success || count <= 0 || count >= 1000000)
                 {
@@ -368,7 +328,7 @@ namespace GameWithConsoleInterface
                     return;
                 }
 
-                stacks.Add(r, new BattleUnitsStack(units[(int) type], count, r));
+                stacks.Add(r, new BattleUnitsStack(units[type], count, r));
                 Console.WriteLine("\nСтек успешно создан");
             }
         }
@@ -417,12 +377,12 @@ namespace GameWithConsoleInterface
 
         private void PrintInitiative1(Scale scale)
         {
-            Console.Write(String.Join("--> ", scale.Values().Select(stack => String.Format($"{stack.Name} ({stack.Initiative}) "))));
+            Console.Write(String.Join("--> ", scale.Stacks.Select(stack => String.Format($"{stack.Name} ({stack.Initiative}) "))));
         }
 
         private void PrintInitiative2(Scale scale)
         {
-            Console.WriteLine(String.Join(" --> ", scale.Values().Select(stack => stack.Name)));
+            Console.WriteLine(String.Join(" --> ", scale.Stacks.Select(stack => stack.Name)));
         }
 
         private void AddStackToArmy()
@@ -432,6 +392,12 @@ namespace GameWithConsoleInterface
             if (t == null || !armys.ContainsKey(t))
             {
                 Console.WriteLine("\nАрмии с таким названием не существует");
+                return;
+            }
+
+            if (armys[t].Count == 6)
+            {
+                Console.WriteLine("\nВ этой армии уже максимальное количество стеков");
                 return;
             }
 
@@ -449,7 +415,8 @@ namespace GameWithConsoleInterface
                 return;
             }
 
-            Console.WriteLine(armys[t].Add(stacks[r]) ? "\nСтек успешно добавлен" : "Превышено максимальное количество стеков в армии");
+            armys[t].Add(stacks[r]);
+            Console.WriteLine("\nСтек успешно добавлен");
         }
 
         private void DeleteStackFromArmy()
@@ -481,30 +448,6 @@ namespace GameWithConsoleInterface
             Console.WriteLine(
                 $"\n{String.Join("\n", Enum.GetValues(typeof(TempMods)).OfType<TempMods>().Select(mod => String.Format($"{mod} - {GetDescription(mod)}")))}\n\n{new String('=', Console.WindowWidth)}\n\n");
         }
-
-//        private void ChangeInitiative()
-//        {
-//            Console.WriteLine("Введите название стека");
-//            var t = Console.ReadLine();
-//            if (t != null && stacks.ContainsKey(t))
-//            {
-//                success = false;
-//                while (!success)
-//                {
-//                    Console.WriteLine("Введите новое значение инициативы");
-//                    var r = Console.ReadLine();
-//                    success = Single.TryParse(r, out var init);
-//                    if (success)
-//                    {
-//                        stacks[t].Initiative = init;
-//                    }
-//                    else
-//                        Console.WriteLine("\nНеправильный формат ввода\n");
-//                }
-//            }
-//            else
-//                Console.WriteLine("\nСтека с таким названием не существует");
-//        }
 
         private bool Attack(BattleUnitsStack attacker)
         {
@@ -543,7 +486,7 @@ namespace GameWithConsoleInterface
 
         private bool Cast(BattleUnitsStack caster)
         {
-            var abilities = caster.Unit.SelfAbilities.Where(ab => BattleUnitsStack.GetIsActive(ab)).ToList();
+            var abilities = caster.Unit.Abilities.Where(ab => BattleUnitsStack.GetIsActive(ab)).ToList();
 
             if (abilities.Count == 0)
             {
@@ -556,7 +499,7 @@ namespace GameWithConsoleInterface
             Console.WriteLine();
             var t = Console.ReadLine();
             success = Enum.TryParse<Abilities>(t, out var ability);
-            if (!success || !caster.Unit.SelfAbilities.Contains(ability))
+            if (!success || !caster.Unit.Abilities.Contains(ability))
             {
                 Console.WriteLine("\nУ стека нет такой способности");
                 return false;

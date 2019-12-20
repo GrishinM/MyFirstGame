@@ -26,14 +26,8 @@ namespace MyGameEngine
             val = (Convert.ToInt32(val.Item1 * x), Convert.ToInt32(val.Item2 * x));
         }
 
-        public int Item1()
-        {
-            return val.Item1;
-        }
+        public int Min => val.Item1;
 
-        public int Item2()
-        {
-            return val.Item2;
-        }
+        public int Max => val.Item2;
     }
 }

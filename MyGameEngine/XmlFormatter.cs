@@ -4,9 +4,9 @@ using System.Xml.Linq;
 
 namespace MyGameEngine
 {
-    public class XmlFormatter
+    public class XmlFormatter : IFileService
     {
-        public static void Save(string file, IEnumerable<Army> armys)
+        public void Save(string directory, string filename, IEnumerable<Army> armys)
         {
             var doc = new XDocument();
             var root = new XElement("Armys");
@@ -41,21 +41,22 @@ namespace MyGameEngine
             }
 
             doc.Add(root);
-            doc.Save(file + ".xml");
+            doc.Save(directory + @"\" + filename + ".mygame");
         }
 
-        public static (SortedDictionary<string, Army>, SortedDictionary<string, BattleUnitsStack>) Load(string file, List<Unit> units)
+        public (Dictionary<string, Army>, Dictionary<string, BattleUnitsStack>) Open(string directory, string filename, Dictionary<string, Unit> units)
         {
-            var doc = XDocument.Load(file + ".xml");
-            var armys = new SortedDictionary<string, Army>();
-            var stacks = new SortedDictionary<string, BattleUnitsStack>();
+            var doc = XDocument.Load(directory + @"\" + filename + ".mygame");
+            var armys = new Dictionary<string, Army>();
+            var stacks = new Dictionary<string, BattleUnitsStack>();
             foreach (var army_node in doc.Element("Armys").Elements("Army"))
             {
                 var army_name = army_node.Attribute("name").Value;
                 var army = new Army(army_name);
                 foreach (var stack_node in army_node.Element("BattleUnitsStacks").Elements("BattleUnitsStack"))
                 {
-                    var success = Enum.TryParse<Units>(stack_node.Attribute("unit").Value, out var unit);
+//                    Enum.TryParse<Units>(stack_node.Attribute("unit").Value, out var unit);
+                    var unit = stack_node.Attribute("unit").Value;
                     var stack_name = stack_node.Attribute("name").Value;
                     var count = Convert.ToInt32(stack_node.Attribute("count").Value);
                     var currentcount = Convert.ToInt32(stack_node.Attribute("currentcount").Value);
@@ -63,12 +64,12 @@ namespace MyGameEngine
                     var mods = new SortedDictionary<TempMods, int>();
                     foreach (var mod_node in stack_node.Element("TempMods").Elements("TempMod"))
                     {
-                        success = Enum.TryParse<TempMods>(mod_node.Attribute("name").Value, out var mod);
+                        Enum.TryParse<TempMods>(mod_node.Attribute("name").Value, out var mod);
                         var mod_count = Convert.ToInt32(mod_node.Attribute("count").Value);
                         mods.Add(mod, mod_count);
                     }
 
-                    var stack = new BattleUnitsStack(units[(int) unit], count, stack_name, currentcount, currenthealth, mods);
+                    var stack = new BattleUnitsStack(units[unit], count, stack_name, currentcount, currenthealth, mods);
                     army.Add(stack);
                     stacks.Add(stack_name, stack);
                 }

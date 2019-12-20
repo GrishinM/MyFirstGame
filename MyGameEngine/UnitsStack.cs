@@ -1,14 +1,12 @@
-﻿﻿using System;
- using Newtonsoft.Json;
-
- namespace MyGameEngine
+﻿namespace MyGameEngine
 {
     public class UnitsStack
     {
-        [JsonIgnore]public Army Army { get; set; }
+        public Army Army { get; set; }
         public string Name { get; }
         public Unit Unit { get; }
         public int Count { get; }
+
         public bool CanTurn { get; protected set; }
         //public float Initiative { get; set; }
 
