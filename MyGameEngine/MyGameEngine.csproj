@@ -1,0 +1,21 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="PriorityQueue, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
+      <HintPath>..\PriorityQueue\PriorityQueue\bin\Debug\PriorityQueue.dll</HintPath>
+    </Reference>
+    <Reference Include="ProrityQueue, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null">
+      <HintPath>..\ProrityQueue\ProrityQueue\bin\Debug\ProrityQueue.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.2" />
+    <PackageReference Include="System.Data.SQLite" Version="1.0.112" />
+  </ItemGroup>
+
+</Project>
