@@ -4,9 +4,6 @@
 **/.vs
 **/.idea
 **/bin
-**/Properties
 **/obj
-**/*.csproj
-**/*.config
 *.docx
 *.db

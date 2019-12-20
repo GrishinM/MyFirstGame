@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace GameWithConsoleInterface
+﻿namespace GameWithConsoleInterface
 {
     internal static class Program
     {
